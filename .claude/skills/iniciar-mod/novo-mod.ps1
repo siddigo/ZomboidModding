@@ -60,7 +60,7 @@ param(
 
     # Build minimo do jogo. Convencao do workspace: acompanhar a estavel mais
     # recente, nao o piso do B42. Subir este default quando a estavel avancar.
-    [string]$VersionMin = '42.20',
+    [string]$VersionMin = '42.21',
 
     # Nome da pasta de versao. No workspace convivem '42' e '42.0'.
     [string]$PastaVersao = '42',

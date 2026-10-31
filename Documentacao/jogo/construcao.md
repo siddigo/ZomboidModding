@@ -107,6 +107,13 @@ usam a forma `Perk:valor` — o perk tem de existir, e criar perk novo não é p
 `timedAction = BuildWallHammer` referencia um bloco `timedAction` do `.txt`, **não** uma classe Lua —
 a distinção está em [timedactions.md](timedactions.md).
 
+**Em runtime, a receita de construção é um `CraftRecipe` à parte.** `getScriptManager():getBuildableRecipe(nome)`
+(`PZ/media/lua/client/ISUI/ISInventoryPaneContextMenu.lua:1200`) devolve o mesmo tipo que
+`getCraftRecipe`, com `getInputs()` e `Load(String, String)` (bytecode de `ScriptManager` e
+`zombie.scripting.entity.components.crafting.CraftRecipe`). Ou seja, mudar o custo de uma `entity`
+sem redeclarar o bloco segue o mesmo caminho da receita comum
+([scripts-txt.md](scripts-txt.md), "Reescrever a receita em runtime"). `[levantado 2026-10-31]`
+
 ## A ponte `.txt` → Lua: os campos `On*`
 
 O `.txt` nomeia funções Lua diretamente. Censo em todo o `media/scripts`:
@@ -276,5 +283,8 @@ Os temas de `generated/entities/` são `admin`, `agricultural`, `animals`, `appl
   arquivos não foram lidos e os cursores de destruir/pintar claramente continuam vivos.
 - **Nenhuma fonte da comunidade foi cruzada** nesta rodada. O PZ-API-Docs cataloga `entity` em
   `scripts/`, e é a via para fechar os campos de componente.
+- `[2026-10-31]` **O nome que `getBuildableRecipe` aceita é o nome da `entity`** (`Kiln_Large`, por exemplo)? O
+  jogo chama com o nome vindo de uma lista de receitas do item (`ISInventoryPaneContextMenu.lua:1197-1200`),
+  e nenhuma linha do `media/` liga esse nome ao da `entity`. Resolve com `print` in-game.
 
 > Última verificação: 2026-08-07 — PZ buildid 24574865 (branch public, atualizado 2026-08-07), media/.

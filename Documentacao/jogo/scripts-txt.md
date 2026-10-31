@@ -628,6 +628,19 @@ funciona: as receitas continuam vindo de `LearnedRecipes` e o texto, de `Print_T
 perde é o carimbo `literatureTitle` — sem ele o jogo nunca marca a revista como lida, então não
 aparece "Reler" nem o tooltip `ContextMenu_RecentlyRead`, e o item fica sempre com cara de inédito.
 
+**O jornal datado sorteia a edição sem olhar a data do jogo.** `[levantado 2026-10-31]` Os
+`onCreate*NewNewspaper` e `onCreateRecentNewspaper` (`PZ/media/scripts/generated/items/literature.txt:4174-4249`)
+chamam `nameNewspaper(item, Newspaper.X)`, herdado de `zombie.scripting.logic.RecipeCodeHelper`
+(superclasse de `ItemCodeOnCreate`). O método faz `Rand.Next` sobre `paper:getIssues()`, ou pega a
+**última** edição se o item tem `ItemTag.NEWSPAPER_NEW`, e não compara com `GameTime` em ponto
+nenhum. As edições são strings `<Jornal>_<Mês><Dia>` em inglês (`KentuckyHerald_July16`, no
+`static {}` de `zombie.scripting.objects.Newspaper`), então jornal com data posterior ao início do
+jogo nasce no dia 1. O que fica no item, pelo `setPrintMediaInfo`: `setName(getText(paper:getTitle(issue)))`;
+`modData.printMedia = { title = getTitle(issue), info = getTranslationInfoKey(issue), text = getTranslationTextKey(issue), id = paper:toString() }`;
+`modData.literatureTitle = getTitle(issue)`. **A edição não é gravada**: recupera-se comparando
+`printMedia.title` com `getTitle` de cada edição. `Newspaper` aparece no `LuaManager$Exposer`, mas
+`RecipeCodeHelper` não — ver "Pontos a confirmar".
+
 **A exceção é o *schematic*.** `setSchematicLearnedRecipes` (privado, chamado por
 `onCreateMeleeWeaponSchematic`, `onCreateSurvivalSchematic` e os outros seis) sorteia com
 `Rand.Next` sobre uma `List<CraftRecipeKey>` e chama `Literature.setLearnedRecipes()`. Aí o
@@ -678,6 +691,13 @@ O **seletor** diz *quais* itens servem. Quatro formas:
 | `tags[...]` | `item 1 tags[base:sharpknife;base:meatcleaver]` |
 | `categories[...]` | `-fluid 0.25 categories[Water]` (`PZ/media/scripts/generated/entities/pottery/cratRecipes/craftrecipe_potterywheel.txt:88`) |
 | curinga `[*]` | `item 1 [*]` — qualquer item (`recipes_butter_churn.txt:10`) |
+
+`categories[Water]` casa por **categoria do fluido**, e `TaintedWater` declara `Water` entre as dele
+(`PZ/media/scripts/generated/fluids.txt:20-27`), ao lado de `Hazardous`. Pelo script, então, as
+receitas de cimento/concreto com `-fluid 10.0 categories[Water] mode:mixture`
+(`PZ/media/scripts/generated/recipes/recipes_buckets.txt:12`, `:36`, `:60`) aceitam água
+contaminada. `[levantado 2026-10-31]` — se o motor recusa `Hazardous` na hora do craft está em
+"Pontos a confirmar".
 
 Os **modificadores** vêm depois do seletor:
 
@@ -858,6 +878,21 @@ que se pensava ter escrito.
 **Nome da receita = chave de tradução, sem prefixo.** `craftRecipe MakeStake` é traduzido pela chave
 `"MakeStake"` em `Recipes.json` (`PZ/media/lua/shared/Translate/EN/Recipes.json:203`). No B41 a chave
 levava prefixo `Recipe_`; hoje `EN/Recipes.json` tem **zero** chaves `Recipe_`.
+
+### Reescrever a receita em runtime — o caminho com opção de sandbox `[levantado 2026-10-31]`
+
+Redeclarar o bloco em `module Base` troca a receita para sempre, sem como desligar. Para condicionar
+a uma opção, o mod reescreve a receita já carregada:
+`ScriptManager.instance:getCraftRecipe(nome)` (ou `getScriptManager():getCraftRecipe`), depois
+`:getInputs():clear()` / `:getOutputs():clear()` e `:Load(nome, "{ … }")` com um bloco no formato
+do `.txt`. Só `Load` **mescla**: `"{ Time = 30, }"` sozinho troca o tempo e mantém o resto, e por
+isso as listas precisam do `clear()` antes. `Load(String, String)` e `getInputs()`/`getOutputs()`
+estão em `zombie.scripting.entity.components.crafting.CraftRecipe` (bytecode). O jogo não tem
+exemplo. O precedente é mod publicado e atualizado em 2026
+(`STEAM/2788256295/mods/AmmoMaker/42.20/media/lua/shared/ammomaker_recipeManager.lua:172`, `:902-905`),
+que chama tudo em `Events.OnInitGlobalModData` (`:1052`) a partir de `shared/`, lendo `SandboxVars`
+dentro do handler. Receita de **construção** (`entity`) sai por `getBuildableRecipe(nome)` — ver
+[construcao.md](construcao.md).
 
 ## `entity` — o sistema de estações do B42
 
@@ -1320,7 +1355,11 @@ inicial**, sozinho contra o padrão dos vizinhos. `whitelist` (56) fica fora dos
 `[levantado 2026-10-27]` Há um terceiro sub-bloco, **`Poison`**, com `chave = valor`:
 `maxEffect`, `minAmount`, `diluteRatio` (`PZ/media/scripts/generated/fluids.txt:32-37`, no
 `TaintedWater`). 10 ocorrências em `fluids.txt`; `maxEffect` só aparece com `Medium` (6) e `Deadly`
-(4) em `generated/`. O fluido de mod com nome global e a conversão de fluido por `OnCreate` estão em
+(4) em `generated/`. **Fluido não estraga:** `DaysFresh`, `DaysTotallyRotten` e afins têm zero
+ocorrência em `fluids.txt`, `fluids_Alcoholic.txt` e `fluids_Beverages.txt`, e também em
+`items/normal.txt`, onde moram os recipientes. Leite líquido (`CowMilk` em `Base.Milk`,
+`normal.txt:6046-6066`) dura para sempre, e só o leite que é **comida** (`Base.CannedMilkOpen`,
+`items/food.txt:3949-3976`) estraga. `[levantado 2026-10-31]` O fluido de mod com nome global e a conversão de fluido por `OnCreate` estão em
 [fazenda-e-pesca.md](fazenda-e-pesca.md), "Fluido de mod e conversão dentro do recipiente".
 
 **`fluid Coffee` existe e nada o produz.** Está declarado em
@@ -1579,6 +1618,13 @@ O sétimo da lista antiga, **`animation`**, saiu para [animacao.md](animacao.md)
   - Se um mod pode declarar `xuiConfig` próprio, sendo bloco único no jogo inteiro. O censo já
     fechou e é **0 em 101 mods** (89 de `STEAM/` + 12 de `WS/`); o que segue em aberto é se não dá
     ou se ninguém tentou. Mecanismo e cadeia de aplicação em [xui.md](xui.md).
+- `[2026-10-31]` **`categories[Water] mode:mixture` aceita `TaintedWater` na hora do craft?** O script diz que
+  sim (ver "Contrato dos blocos `inputs`/`outputs`"), mas há relato de jogador de que o cimento só sai
+  com água limpa. Pode ser regra do Java contra `Hazardous` ou build antigo. Resolve num teste in-game
+  de `MakeBucketOfConcrete` com balde de água contaminada.
+- `[2026-10-31]` **Os estáticos de `Newspaper` (`Newspaper.KENTUCKY_HERALD` etc.) são alcançáveis pelo Lua?** A
+  classe está no `LuaManager$Exposer`, mas nenhum Lua do jogo a usa, e o exposer pode cobrir só
+  métodos de instância. Resolve com `Newspaper.KENTUCKY_HERALD:getIssues()` no console de debug.
 
 > Última verificação: 2026-08-07 — PZ buildid 24574865 (branch public, atualizado 2026-08-07),
 > media/ + STEAM/ (89 mods) + PZ-API-Docs 42.20.0.

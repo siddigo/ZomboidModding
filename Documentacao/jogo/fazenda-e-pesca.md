@@ -394,6 +394,24 @@ Nenhum `Events.*` é registrado em `client/Fluids/` nem em `shared/Fluids/`.
   precisa mudar o conteúdo **antes** de beber faz isso no `new`, cujas proporções da ação
   (`startRatio`, `maxTime`) já são calculadas a partir dele.
 
+### Quanto se bebe — menu do item contra a pia `[levantado 2026-10-31]`
+
+- **O menu de beber do inventário só oferece fração fixa do conteúdo**: "Tudo" (1), "Metade" (0.5) e
+  "Um quarto" (0.25), em `ISInventoryPaneContextMenu.doDrinkFluidMenu`
+  (`PZ/media/lua/client/ISUI/ISInventoryPaneContextMenu.lua:2276-2338`; submenu em `:2322-2336`).
+  O número vai para `ISDrinkFluidAction:new(..., percentage)` como fração do que **está** no
+  recipiente (`PZ/media/lua/shared/TimedActions/ISDrinkFluidAction.lua:136-138`), não em litros.
+- **A pia bebe o que a sede pede**: `waterNeeded = min(THIRST * 2, waterAvailable)`
+  (`PZ/media/lua/shared/TimedActions/ISTakeWaterAction.lua:193-195`). Com `Water` em
+  `ThirstChange = -50.0` (`PZ/media/scripts/generated/fluids.txt:13-15`), cada litro tira 0,5 de sede.
+- **O "beber para a sede" de item existe e está morto.** `doDrinkForThirstMenu`
+  (`ISInventoryPaneContextMenu.lua:2340-2357`) não tem chamador em `media/lua`, traz um `TODO` do
+  próprio jogo e passa uma **fração** para `ISDrinkFromBottle`, que trata o argumento como contagem
+  de usos.
+- Métodos de `FluidContainer` úteis para trocar o conteúdo, além dos acima (bytecode):
+  `isMixture()`, `getPrimaryFluid()`, `getPrimaryFluidAmount()`, `isPrimaryFluidType(String)`,
+  `isPureFluid(Fluid)`, `removeFluid(float)`, `Empty()`.
+
 ## O par cliente/servidor — os três `GlobalObjectSystem`
 
 Fazenda, armadilha e acampamento são objetos globais persistidos, e **cada um existe em dose dupla**,

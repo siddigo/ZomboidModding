@@ -153,6 +153,28 @@ Duas consequências:
   devolve o valor já ajustado, não o declarado.
 - `ignoreHandsWounds` (`:107`) desliga só o fator de dor.
 
+### `stop` não guarda progresso — exceto livro com páginas `[levantado 2026-10-31]`
+
+Interromper uma ação e refazê-la recomeça do zero na quase totalidade dos casos, porque o efeito só
+acontece em `perform`/`complete` e o `stop` não grava nada:
+
+| Ação | O que o `stop` faz | Onde o efeito acontece |
+|---|---|---|
+| `ISHandcraftAction` (todo craft) | só limpa a barra (`PZ/media/lua/shared/Entity/TimedActions/ISHandcraftAction.lua:154-171`) | `performRecipe` em `perform`/`complete` (`:173-219`) |
+| `ISResearchRecipe` | só zera o `jobDelta` (`PZ/media/lua/shared/TimedActions/ISResearchRecipe.lua:42-45`) | `researchRecipes` em `complete` (`:75-88`) |
+| `ISReadABook`, literatura **sem** página | nada (`PZ/media/lua/shared/TimedActions/ISReadABook.lua:179-191`); a duração usa `numPages = 5` fixo (`:442-460`) | `addReadLiterature` em `perform` (`:206`) |
+| `ISReadABook`, livro **com** página | nada; o progresso já foi gravado a cada `update` por `setAlreadyReadPages` (`:25-37`) | — |
+
+O livro mostra o idioma de retomada que o jogo usa: `self:setCurrentTime(self.maxTime * fração)` no
+`start` (`ISReadABook.lua:140-142`), com `getJobDelta()` (`ISBaseTimedAction.lua:36`) medindo a fração.
+Um mod que queira manter progresso grava a fração no `stop` e a aplica no `start`.
+
+**`ISHandcraftAction:new` calcula `maxTime` antes de saber os itens.** `o.maxTime = o:getDuration()`
+(`ISHandcraftAction.lua:412`) roda antes de `o.items`/`o.recipeItem` (`:414-415`), e `getDuration` é
+só `craftRecipe:getTime(character) * 5` (`:253-261`). Escalar a duração pelo estado de um insumo
+(o fio da lâmina, por exemplo) dentro de `getDuration` não enxerga o insumo. O lugar é depois do
+`new` original.
+
 ## A arquitetura multiplayer — `perform` no cliente, `complete` no servidor
 
 Esta é a seção que faltava, e é o contrato que decide se a sua ação funciona em servidor. A fonte

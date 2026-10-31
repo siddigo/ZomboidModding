@@ -152,6 +152,25 @@ recusa o arquivo por mapa e vai para o motor.
 `getSpawnRegions()` termina com `triggerEvent("OnSpawnRegionsLoaded", regions)` (`:90`), e **só no
 lado não-cliente**.
 
+### O prédio de spawn e o alarme em multiplayer `[levantado 2026-10-31]`
+
+Tudo nesta subseção é bytecode do `.jar` (`javap -p -c`), sem Lua do jogo no caminho.
+
+- **Quem dispara o alarme de prédio é o servidor.** `IsoGameCharacter.updateInternal` testa
+  `getRoom().building.def:isAlarmed()` e chama `AmbientStreamManager.doAlarm`, mas pula o bloco
+  quando `GameClient.client` é verdadeiro. Desarmar no cliente não tem efeito em MP.
+- **O vanilla desarma o prédio de spawn na conexão.** `GameServer.receivePlayerConnect` chama
+  `preventIndoorZombies(x, y, z)` com a posição do jogador naquele instante, e ela só faz
+  `BuildingDef.setAllExplored(true)` + `setAlarmed(false)` se `SpawnPoints.isSpawnBuilding(def)`.
+  Personagem novo escolhe o spawn depois de conectar, então essa posição pode não ser a casa onde ele
+  nasce. Há relato de jogador de alarme disparando no spawn em MP, e essa é a hipótese.
+- API de prédio: `BuildingDef:isAlarmed()`, `:setAlarmed(boolean)`, `:isAllExplored()`,
+  `:setAllExplored(boolean)`; `IsoBuilding:TriggerAlarm()`.
+- **Não há evento Lua de servidor para "jogador criado".** Os `triggerEvent` de `GameServer.class`
+  são `OnClientCommand`, `OnGameBoot`, `OnGameTimeLoaded`, `OnReceiveItemListNet` e
+  `OnServerStarted`. Um mod que precise agir no spawn vai do cliente (`OnCreatePlayer`) ao servidor
+  por comando — ver [persistencia-e-multiplayer.md](persistencia-e-multiplayer.md).
+
 ## O evento `OnSpawnRegionsLoaded` é da classe invisível
 
 `OnSpawnRegionsLoaded` é disparado por `triggerEvent` e **não tem nenhum `LuaEventManager.AddEvent`
@@ -232,5 +251,9 @@ Não confundir com o `type = "WorldGen"` do `objects.lua`, que registra uma **re
 - **`basements.lua` e os 147 `.pzby` de `basement_access/`** — a ligação é
   `Basements.getAPIv1():registerBasementSpawnLocation` (`metazoneHandler.lua:11`), mas a API v1 em
   si (`lua/shared/ProceduralBasements/`) não foi levantada. Ver [mapa-media.md](mapa-media.md).
+- `[2026-10-31]` **Por que o alarme do spawn dispara em MP**: a hipótese da posição na conexão (ver "O prédio de
+  spawn e o alarme em multiplayer") não foi testada, e `SpawnPoints.isSpawnBuilding` não foi
+  desmontado. Também não se sabe se o desarme feito por comando chega antes do 1º update do
+  personagem no servidor.
 
 > Última verificação: 2026-08-07 — PZ buildid 24574865 (branch public, atualizado 2026-08-07), media/.

@@ -439,6 +439,12 @@ que o levantamento sustenta:
 - **A regex de raiz `media\/sandbox-options\.txt$`** vem do PZ-API-Docs
   (`scripts/roots/sandboxoptions.html`), não de `PZ/media/`. Explica o arquivo funcionar em
   `common/media/`, mas não está confirmada no código.
+- `[2026-10-31]` **Handler de `Events.OnInitGlobalModData` registrado em `shared/` lê o valor do mundo?** É a
+  leitura natural da ordem do boot ("O que falha em silêncio": `SandboxOptions.load()` vem antes), e
+  há mod publicado e atualizado em 2026 que depende disso para reescrever receita pelo sandbox
+  (`STEAM/2788256295/mods/AmmoMaker/42.20/media/lua/shared/ammomaker_recipeManager.lua:154`, `:1052`).
+  Não foi medido aqui. Diferente do `OnGameStart` do mesmo trecho: receita de `ScriptManager` é
+  reescrita no lugar, não é tabela copiada pelo Java.
 - **Existe evento Lua para carga/mudança de sandbox option?** Não foi encontrado nenhum `Events.*`
   com `Sandbox` no nome em `PZ/media/lua`. Ausência de achado não é prova de ausência — ver
   [eventos-lua.md](eventos-lua.md).
