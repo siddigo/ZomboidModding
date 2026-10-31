@@ -12,6 +12,15 @@ Workshop, respeitando as convenções da IndieStone.
 máquina, lista dos próprios mods, remotos, pendências. O Claude Code carrega os dois. Nada pessoal
 entra aqui — este arquivo é publicado.
 
+**Pasta pessoal.** O que você gera usando o workspace (`Projetos/`, `Documentacao/mods/`,
+`Documentacao/oficial/`, `.claude/memory/`) pode ficar na raiz daqui, onde o `.gitignore` já o
+exclui, ou numa **pasta pessoal** fora deste repositório, com repo git próprio e a mesma estrutura
+relativa. Nesse caso o `CLAUDE.local.md` daqui importa o `CLAUDE.md` de lá (`@<caminho>/CLAUDE.md`)
+e declara o caminho, e quando este arquivo ou uma skill disser `Projetos/` ou `Documentacao/mods/`,
+leia como relativo à pasta pessoal. A sessão continua abrindo **aqui**, porque skills e agentes só
+carregam do cwd (ver "Integração com Claude Code"); a pasta pessoal entra em `additionalDirectories`.
+Nada é duplicado entre as duas: doc do jogo, skills e agentes só existem aqui.
+
 ## Locais do workspace
 
 Caminhos padrão de uma instalação Steam no Windows — ajuste ao seu.
@@ -120,6 +129,9 @@ Documentacao/    # referencia de modding: mapa do media/, formatos .txt, API Lua
   mods/          # opcional, por usuario: inventario e paginas dos proprios mods
   oficial/       # opcional, copia local de material da IndieStone (nao distribuido)
 ```
+
+As entradas marcadas "por usuario"/"opcional" podem morar na pasta pessoal em vez daqui (ver
+"Pasta pessoal" no topo).
 
 O que existe:
 
@@ -239,8 +251,8 @@ da lista de páginas: ele já vive no rodapé de cada página e em `Documentacao
 **Modelo de `Projetos/`** (definido pela skill `planejador`): `Projetos/<NomeDoMod>/` por mod e,
 dentro dele, uma pasta por pedido de planejamento — `NN-nome-curto-do-conjunto/`, com `NN`
 sequencial dentro daquele mod. Cada pasta contém um `SPEC-00-escopo.md` (obrigatório, mesmo com uma
-única spec) e as specs individuais `SPEC-XX-nome-curto.md`. Specs vivem **aqui**, nunca dentro do
-mod — o mod é o produto publicável e não carrega planejamento.
+única spec) e as specs individuais `SPEC-XX-nome-curto.md`. Specs vivem **neste workspace** (aqui ou
+na pasta pessoal), nunca dentro do mod — o mod é o produto publicável e não carrega planejamento.
 
 ## Formatos usados nos mods
 
@@ -398,8 +410,8 @@ working directories*. Consequências:
 - Skills e settings deste repo seguem a mesma regra: só valem com o cwd aqui dentro.
 
 **Memória automática.** O padrão seria `~/.claude/projects/<slug>/memory/`, chaveado pela raiz do
-git. Para a memória acompanhar o repositório, redirecione para `.claude/memory/` via
-`autoMemoryDirectory` em `.claude/settings.local.json`. Detalhes que importam:
+git. Para a memória acompanhar o repositório, redirecione para `.claude/memory/` (daqui ou da
+pasta pessoal) via `autoMemoryDirectory` em `.claude/settings.local.json`. Detalhes que importam:
 
 - `autoMemoryDirectory` é **ignorado em project settings** (`.claude/settings.json`, versionado) —
   é uma restrição de segurança do Claude Code. Tem que estar em `settings.local.json` (escopo local)

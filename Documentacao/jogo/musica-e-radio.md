@@ -214,6 +214,26 @@ RecMedia["dedd4e83-6e3b-4f4f-9c9b-72a5ed08969d"] = {
   abaixo de 400 e para a 0 no resto, caindo para a 0 quando a sorteada está vazia. As fitas de
   habilidade do jogo usam `0`.
 
+### Saber se o jogador assistiu uma fita `[levantado 2026-10-31]`
+
+Não precisa de hook no rádio: `getZomboidRadio():getRecordedMedia()` já responde. Pelo bytecode de
+`zombie.radio.media.RecordedMedia` (buildid 25485521, afirmação de `.jar`):
+
+- `getMediaData(id)` devolve o `MediaData` pela **chave de `RecMedia`** (o UUID, ou o nome legível de
+  um mod);
+- `hasListenedToAll(player, mediaData)` e `hasListenedToLine(player, guid)` devolvem boolean.
+
+Uso do jogo: `PZ/media/lua/client/ISUI/ISLiteratureUI.lua:190` e `:215`, sobre o `MediaData` vindo de
+`getAllMediaForType` (`:471`). A marcação é por personagem, a mesma de `addKnownMediaLine`, então
+"já assistiu" persiste no save sem `ModData` de mod. `MediaData:getTranslatedItemDisplayName()` dá o
+nome traduzido da fita.
+
+`MediaData$MediaLineData.getTextGuid()` devolve o campo `text` da linha, ou seja, a chave `RM_…`.
+Ver "Pontos a confirmar" para saber se é esse o `_guid` que chega a `checkPlayer`.
+
+Nem toda fita temática treina alguma coisa: as cinco do *Simon's Fitness Club*
+(`shared/RecordedMedia/recorded_media.lua:5992-6131`) só têm `codes = "BOR-1"` em todas as linhas.
+
 ### Os `codes` de uma linha — e por que mod não consegue somar código
 
 Isto vale para `LineEntry` de rádio e para linha de fita: é o mesmo interpretador,
@@ -263,6 +283,11 @@ ser conhecida. A instância nasce em `OnGameBoot` (`:353`) e `getInstance()` é 
   jogo tem a mesma exposição para os códigos dele. Não observado em servidor.
 - **Se fita de mod entra no sorteio de um save já existente.** `RecordedMedia` grava índices em
   arquivo próprio (`SAVE_FILE`, bytecode); o efeito de acrescentar entrada depois não foi aberto.
+- **Se o `_guid` de `checkPlayer` é o `getTextGuid()` da linha** (a chave `RM_…`). O getter devolve
+  `text` (bytecode, 2026-10-31), mas quem monta a chamada de `OnDeviceText` para mídia gravada não
+  foi aberto.
+- **Se `hasListenedToAll` responde certo no servidor e no cliente em MP.** `OnDeviceText` marca a
+  linha nos dois ramos (`ISRadioInteractions.lua:261-278`); não observado em servidor.
 - **Nenhuma fonte da comunidade foi cruzada** para música ou rádio nesta rodada.
 
 > Última verificação: 2026-08-07 — PZ buildid 24574865 (branch public, atualizado 2026-08-07), media/.

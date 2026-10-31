@@ -68,7 +68,7 @@ contexto. Corte antes de gravar.
 
 ## Onde salvar as specs
 
-As specs vivem **neste repositório** (`C:\Projetos\ZomboidModding\Projetos\`), nunca dentro da pasta do mod — o mod é o produto publicável e não carrega planejamento.
+As specs vivem em `Projetos/` **deste workspace** — na pasta pessoal, se o `CLAUDE.local.md` declarar uma, senão na raiz deste repositório (ver "Pasta pessoal" em `.claude/CLAUDE.md`) —, nunca dentro da pasta do mod: o mod é o produto publicável e não carrega planejamento. Os caminhos `Projetos/...` abaixo são relativos a essa raiz.
 
 1. Diretório raiz: `Projetos/<NomeDoMod>/`, usando o nome exato da pasta do mod em `Workshop/` (ex.: `Projetos/MeuMod/`). Se o mod ainda não existe, use o nome que ele terá. Crie se não existir.
 2. Dentro dele, crie uma pasta nova para este conjunto: `Projetos/<NomeDoMod>/NN-nome-curto-do-conjunto/`, onde `NN` é sequencial (2 dígitos) a partir da maior pasta `NN-*` já existente **naquele mod**, e `nome-curto-do-conjunto` é um kebab-case que resume o pedido do usuário (ex.: `Projetos/MeuMod/02-arco-improvisado/`).

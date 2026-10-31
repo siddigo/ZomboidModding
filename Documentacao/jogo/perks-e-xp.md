@@ -215,7 +215,10 @@ ordem:
 3. **Multiplicador de livro** (`getMultiplier`) — **só se for maior que 1**. Abaixo disso o ganho não
    muda, embora a UI desenhe as setas para qualquer valor `> 0`
    (`client/XpSystem/ISUI/ISCharacterInfo.lua:155`) e o tooltip mostre o número
-   (`ISSkillProgressBar.lua:71-74`).
+   (`ISSkillProgressBar.lua:71-74`). **Este passo não isenta perícia nenhuma** — vale para
+   `Strength` e `Fitness`, que escapam só do passo 1 `[levantado 2026-10-31, buildid 25485521]`. O
+   `XPMultiplier` gravado por `addXpMultiplier` guarda `minLevel`/`maxLevel`, e o próprio `AddXP` o
+   remove do mapa quando o XP total sai dessa faixa (`getTotalXpForLevel`).
 4. **Sandbox** — `MultiplierConfig.Global` com `GlobalToggle` ligado; senão a opção
    `MultiplierConfig.<Perícia>`.
 
@@ -238,6 +241,37 @@ Lifestyle usa em `LSUtil.lua:1103`.
 > objeto da global. No bytecode ele tira só o multiplicador de **livro** da tabela, chama o `AddXP`
 > de dois argumentos — que aplica o resto da cadeia — e devolve o multiplicador. E, como toda forma
 > de objeto, não atravessa do servidor.
+
+A forma de 3 argumentos `GameServer.addXp(player, perk, amount)`, a que o próprio Java usa, liga a
+cadeia (`b2 = true`). Ela chama `player:getXp():AddXP(…)` **na hora**, sobre a cópia do servidor, e
+só depois `updateXpChecker`. Ou seja, quem lê `getXp():getXP(perk)` logo depois, no servidor, já vê
+o ganho (bytecode, buildid 25485521, 2026-10-31).
+
+### XP de exercício físico `[levantado 2026-10-31]`
+
+A repetição é `ISFitnessAction:exeLooped()` (`PZ/media/lua/shared/TimedActions/ISFitnessAction.lua:122-126`),
+que chama `Fitness.exerciseRepeat()`. Ela só roda em singleplayer ou no servidor: o ramo de
+`animEvent` que a chama testa `isServer() or isSinglePlayerMode` (`:158-170`). O cliente MP não
+repete o XP.
+
+O resto é Java (bytecode de `zombie.characters.BodyDamage.Fitness`, buildid 25485521):
+
+- **`incStats` dá XP de `Strength` e de `Fitness` a cada repetição**, os dois, qualquer que seja o
+  exercício. No SP vai por `getXp():AddXP(perk, amount)` de 2 argumentos, com a cadeia inteira de
+  multiplicadores (livro incluído); no servidor vai por `GameServer.addXp` de 3 argumentos (acima).
+- **O `xpMod` de `FitnessExercises.exercisesType`** (`shared/Definitions/FitnessExercises.lua`) é
+  copiado para o mapa `exercises` do personagem em `Fitness.init()`, e só quando o mapa está vazio.
+  A tabela Lua é global e a cópia é por personagem, uma vez só. Mudar `xpMod` depois não alcança quem
+  já tem cópia, e não dá para ter `xpMod` por jogador.
+- Fitness ainda tem o gate `Nutrition.canAddFitnessXp()` no começo de `AddXP`.
+
+Para dar bônus proporcional ao XP de uma repetição, a via que o levantamento sustenta é envolver
+`exeLooped`: medir o delta de `getXP` em volta da original e somar com `addXpNoMultiplier`, porque o
+delta já veio multiplicado. Não foi observado in-game.
+
+Os limiares por nível de `Strength`/`Fitness` estão no `PerkFactory.init` (bytecode, chamadas
+`AddPerk` com 10 inteiros). Os de `Strength` são duas ordens de grandeza acima dos da entrada
+seguinte, `Agility`, então um valor de XP calibrado para uma perícia não serve para a outra.
 
 **Não conclua nada pela raiz `server/`.** `XpUpdate.lua` mora lá, mas isso não prova que XP seja
 lógica autoritativa de servidor: `server/` carrega nos dois lados, e o próprio arquivo se registra em

@@ -48,7 +48,8 @@ Tudo está em português.
    sistema de X". As skills se encarregam do resto.
 
 Os mods ficam em `~\Zomboid\Workshop`, fora deste repositório. O que você gerar aqui (`Projetos/`,
-`Documentacao/mods/`, `.claude/memory/`) é seu e já está no `.gitignore`.
+`Documentacao/mods/`, `.claude/memory/`) é seu e já está no `.gitignore`. Se preferir versionar isso
+num repositório privado à parte, veja "Pasta pessoal" em `.claude/CLAUDE.md`.
 
 ## Limites
 

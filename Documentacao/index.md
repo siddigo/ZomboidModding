@@ -50,6 +50,10 @@ de modding que se acha na internet é B41 e está errado hoje. Ver
 | [jogo/sandbox-options.md](jogo/sandbox-options.md) | `media/sandbox-options.txt`: o arquivo que só existe em mod, os 5 `type`, o namespace que vira subtabela de `SandboxVars`, as chaves `Sandbox_*` e o gate do `page` |
 | [fontes-externas.md](fontes-externas.md) | *(meta)* Doc da comunidade: o que cada fonte cobre, padrão de URL e o peso dela contra o `media/` |
 
+`mods/` e `oficial/` podem morar aqui (gitignorados) ou na pasta pessoal descrita em
+`.claude/CLAUDE.md`, com o mesmo caminho relativo — por isso as páginas citam `Documentacao/oficial/…`
+e `../oficial/…` dos dois jeitos.
+
 `mods/` é **por usuário e opcional** — não vem no repositório público. Quando existe, `mods/index.md`
 é ao mesmo tempo o índice da subárvore e o inventário dos mods de `WS/` (layout, identidade,
 `mod.info`/`workshop.txt`/tags, camadas presentes, divergências). O baseline ali **não é o `buildid`**:
