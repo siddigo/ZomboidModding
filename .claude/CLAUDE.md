@@ -464,5 +464,10 @@ Limitações reais, que nenhuma regra resolve:
 - Mods em `Workshop/` são independentes, salvo dependência declarada no `mod.info`.
 - Não commitar saves, `options.ini`, logs (`hs_err_pid*.log`, `console.txt`) ou binários do jogo.
 - Seguir a sintaxe e formatação observadas nos arquivos originais do jogo — o parser é sensível.
-- Não há checagem de sintaxe Lua fora do jogo a menos que você instale `luac` (daria um `luac -p`
-  antes de subir). Sem isso, a única validação real é carregar o jogo e ler `console.txt`.
+- **Checagem de sintaxe Lua fora do jogo: `luajit -b <arquivo.lua> <saida>`** em todo `.lua`
+  tocado, antes de mandar testar in-game (`winget install DEVCOM.LuaJIT`). O `-b` só compila; não
+  use `luajit -e "loadfile(...)" arquivo`, que **executa** o arquivo e estoura no primeiro
+  `require` do jogo. LuaJIT e não `luac` 5.4 porque o Kahlua do PZ é gramática 5.1 — o 5.4 aceita
+  `//`, `<const>` e operador bit a bit que o jogo recusa. O LuaJIT ainda aceita `goto`, que o
+  Kahlua não tem. Só pega sintaxe: `nil` em runtime e nome errado da API continuam sendo
+  `console.txt`.
