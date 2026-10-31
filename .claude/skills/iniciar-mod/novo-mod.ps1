@@ -221,7 +221,7 @@ Write-Texto (Join-Path $raiz '.gitignore') @(
 # Smoke test: confirma no console.txt que o mod carregou.
 Write-Texto (Join-Path $pastaLua "$($Nome)_Init.lua") @(
     "local function on${Nome}Start()"
-    "    print(`"[$Nome] carregado`")"
+    "    print(`"[$Nome] loaded`")"
     'end'
     ''
     "Events.OnGameStart.Add(on${Nome}Start)"
