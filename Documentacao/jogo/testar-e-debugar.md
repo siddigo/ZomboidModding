@@ -420,6 +420,16 @@ não aparece nessas listas não foi parseado — o problema é do `.txt`, não d
 é `DebugContextMenu.lua`, com a condição em `:27-30`: em cliente, exige
 `Capability.UseDebugContextMenu`; fora dele, `isDebugEnabled()`.
 
+**Trocar a gravação de uma fita ou disco** — o atalho para testar conteúdo que depende de *uma*
+gravação específica, sem sortear `VHS_Retail` até sair a certa. Clique direito num item cujo script
+tem `RecordedMediaCat`, **no inventário do próprio jogador**, mostra `DBG: Change recording`
+(`ADMIN:` para admin), com submenu de todas as gravações da categoria por
+`getAllMediaForCategory` mais `<NONE>`; a condição é `getCore():getDebug() or isAdmin()`
+(`PZ/media/lua/client/Context/Inventory/InvContextMedia.lua:11-24`). Em SP a escolha vira
+`item:setRecordedMediaData(other)` direto; em cliente MP vai como `sendClientCommand` `item` /
+`changeRecording` (`:32-46`), que o servidor só aplica com `Capability.EditItem`, por
+`setRecordedMediaIndexInteger` (`PZ/media/lua/server/ClientCommands.lua:1223-1235`).
+
 **`ISAdminPowerUI` ("Admin Powers", botão `Cheats` — "Trapaças" no PTBR) é onde fica o LootZed**,
 ferramenta que mostra a chance calculada de spawn de cada item por container — usada para diagnosticar
 item que "devia aparecer no loot e não aparece". Caixa `LootZed` na coluna direita do painel
