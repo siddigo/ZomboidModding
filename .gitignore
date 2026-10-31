@@ -1,0 +1,15 @@
+# Por usuario: o que voce gera usando o workspace fica fora do repositorio publico.
+.claude/settings.local.json
+.claude/memory/
+CLAUDE.local.md
+/CLAUDE.md
+Projetos/
+Documentacao/mods/
+Documentacao/oficial/
+*.code-workspace
+
+# Logs e artefatos do jogo, caso algum caia aqui por engano
+hs_err_pid*.log
+*.hprof
+logs.zip
+console.txt

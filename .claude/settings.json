@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//**/steamapps/**)",
+      "Read(~/Zomboid/**)",
+      "Edit(/**)",
+      "Write(/**)",
+      "Edit(~/Zomboid/Workshop/**)",
+      "Write(~/Zomboid/Workshop/**)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git show *)",
+      "Bash(git branch)",
+      "Bash(git branch -a)",
+      "Bash(git remote -v)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)"
+    ],
+    "deny": [
+      "Edit(//**/steamapps/**)",
+      "Write(//**/steamapps/**)",
+      "NotebookEdit(//**/steamapps/**)",
+      "Bash(rm *steamapps*)",
+      "Bash(rmdir *steamapps*)",
+      "Edit(~/Zomboid/Saves/**)",
+      "Write(~/Zomboid/Saves/**)",
+      "Edit(~/Zomboid/options.ini)",
+      "Write(~/Zomboid/options.ini)"
+    ]
+  }
+}
