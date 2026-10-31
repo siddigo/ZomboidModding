@@ -220,6 +220,22 @@ computador de mesa é o exemplo — `appliances_com_01_72` a `_75`, todos com `C
 e `GroupName = Desktop`, um por `Facing` (`PZ/media/newtiledefinitions.tiles.txt:2091-2156`).
 Comparar nome de sprite obriga a listar os quatro.
 
+### `CustomItem` — o tile vira item, mas só num sentido `[levantado 2026-10-31]`
+
+Um tile com `CustomItem = Modulo.Item` vira esse item quando é pego como móvel. Em vez do
+`Moveables.<sprite>` genérico, `ISMoveableSpriteProps:instanceItem` faz `instanceItem(self.customItem)`
+(`PZ/media/lua/shared/Moveables/ISMoveableSpriteProps.lua:214-219`). O caso do botijão:
+`industry_03_105` e as variantes dele, com `CustomName = Propane Tank` e
+`CustomItem = Base.PropaneTank` (`PZ/media/newtiledefinitions.tiles.txt:97591-97598`). Isso tem duas
+consequências que falham em silêncio:
+
+- **O item sai novo.** `pickUpMoveableInternal` chama `self:instanceItem(...)`
+  (`ISMoveableSpriteProps.lua:1376-1383`), e um *drainable* sai cheio. O estado do objeto não passa
+  para o item, salvo o que `GameEntityFactory.TransferComponents` carrega (`:1383`).
+- **O caminho inverso não existe.** Colocar um móvel procura um item `instanceof(item, "Moveable")`
+  (`:1571`). `Base.PropaneTank` é *drainable* e não tem `WorldObjectSprite`
+  (`PZ/media/scripts/generated/items/drainable.txt:1578-1593`), então não se coloca de volta.
+
 ### `Facing` — o código contradiz a fonte
 
 A fonte declara *"Allowed values: `North`, `East`, `South`, `West`"*. O jogo escreve **letra única**,

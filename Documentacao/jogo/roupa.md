@@ -57,6 +57,15 @@ arquivo do jogo:
 `ClothingItem` e `BodyLocation` aparecem 1.395 vezes cada, no mesmo arquivo: são o par obrigatório
 de fato — nenhuma peça do jogo declara um sem o outro.
 
+`[levantado 2026-10-31]` **`HearingModifier` não tem leitor em Lua.** São 36 ocorrências, todas em
+`clothing.txt`, com valores 0.5, 0.75 e 0.85 (o protetor de ouvido `Hat_EarMuff_Protectors` usa 0.5,
+`:3234`). Nenhum `.lua` lê o campo. O efeito dos traços Surdo e Audição Ruim no som também é Java:
+no Lua só aparecem comentários (`PZ/media/lua/client/TimedActions/ISInventoryTransferAction.lua:292`,
+`PZ/media/lua/client/BuildingObjects/TimedActions/ISBuildAction.lua:75`). Quem quiser abafar o som
+por roupa não tem gancho de áudio. O caminho que sobra é dar o traço em runtime, com
+`getCharacterTraits():add(CharacterTrait.X)` e `:remove(...)` (`PZ/media/lua/server/XpSystem/XpUpdate.lua:203-206`).
+Ver "Pontos a confirmar".
+
 ### `IconsForTexture` é posicional
 
 `IconsForTexture` casa **por posição** com as linhas `<textureChoices>` do `.xml`, não por nome.
@@ -269,6 +278,10 @@ Cada elo quebra sem mensagem, e o sintoma é sempre "a roupa não aparece":
    aparenta ser tolerante, mas isso não está confirmado (abaixo).
 
 ## Pontos a confirmar
+
+- **Se o abafamento de Audição Ruim vale logo que o traço é adicionado em runtime**, ou se o motor
+  só lê o traço quando cria o personagem. Também não se sabe se, em MP, o traço dado no servidor
+  chega ao áudio do cliente. Ainda não foi testado in-game. `[aberto 2026-10-31]`
 
 - **Se o parser de `m_MaleModel` é mesmo indiferente a caixa, extensão e prefixo `media/`.** As duas
   formas convivem no build (`Jacket_Padded.xml:3` vs `:4`), o que é evidência forte de tolerância,

@@ -180,6 +180,16 @@ Notar que **não existe `setBleeding()` nem `setBandaged()`**: sangramento se li
 `setBleedingTime(n)` (`ClientCommands.lua:456`) e faixa se aplica por ação cronometrada, nunca por
 setter.
 
+`[levantado 2026-10-31]` **Queimadura também é setter, mas nenhum caminho de gameplay em Lua a
+aplica.** O único `setBurnTime` com valor positivo é o toggle de debug, `setBurnTime(50)` contra
+`setBurnTime(0)`, em `PZ/media/lua/server/ClientCommands.lua:544-549` e repetido no cliente em
+`ISHealthPanel.lua:246-251`. Fogo e fogão queimam pelo Java. Mod que queira queimar copia o setter
+desse toggle, e `50` é a única referência de magnitude no install. Proteção não tem atalho: nenhum
+item tem tag de proteção contra calor, e a luva de forno `Base.OvenMitt` é `ItemType = base:normal`,
+não roupa (`PZ/media/scripts/generated/items/normal.txt:4186-4194`). Ela se segura na mão, não se
+veste. Para ver o que o personagem veste, use `getWornItems()` com `:get(i):getItem()`
+(`ISFitnessUI.lua:295-296`).
+
 ## Curar — a pilha é ação cronometrada, e o menu é fechado
 
 Aplicar tratamento não é chamar setter. O caminho real, do clique ao efeito:
@@ -244,6 +254,15 @@ Além de ler, dá para **chamar atenção** para um ícone já existente:
 ```lua
 MoodlesUI.getInstance():wiggle(MoodleType.PANIC);   -- ISReloadWeaponAction.lua:475
 ```
+
+`[levantado 2026-10-31]` **O único cheiro do jogo é o moodle `NoxiousSmell`.** Os níveis vão de
+"Bad Smell" a "Deadly Fumes" (`PZ/media/lua/shared/Translate/EN/Moodles.json:184-191`), e nenhum
+`.lua` o referencia, então o que dispara o moodle é Java. **Não existe cheiro do próprio
+personagem**, nem stat de sujeira agregado. Mod que queira esse cheiro calcula a partir da sujeira e
+do sangue por parte do corpo: `getHumanVisual()`, `getBlood(part)` e `getDirt(part)`, percorrendo
+`BloodBodyPartType.FromIndex(i-1)` até `BloodBodyPartType.MAX:index()` (`ISWashYourself.lua:97-99`).
+Na roupa, o mesmo par se lê por parte coberta, via
+`BloodClothingType.getCoveredParts(item:getBloodClothingType())` (`ISWashClothing.lua:76-84`).
 
 ### Quantos e como se chamam
 
@@ -417,6 +436,10 @@ Toda Java. Em `PZ/media/lua` só aparece como slider de debug (`client/DebugUIs/
   ~8,5 h com nível 1.
 
 ## Pontos a confirmar
+
+- **O que dispara o moodle `NoxiousSmell`.** Não há chamador em Lua. A suspeita é cadáver por perto,
+  e as notas da 42.22 (Pre-Release) dizem que o "Bad Smell" passa a impedir dormir, mas nenhuma das
+  duas coisas está provada no `media/`. `[aberto 2026-10-31]`
 
 - **A grafia Lua das outras 15 constantes de `MoodleType`.** Só 11 aparecem em `PZ/media/lua`. As
   chaves de tradução dão os 26 nomes em CamelCase, e as 11 observadas sugerem
