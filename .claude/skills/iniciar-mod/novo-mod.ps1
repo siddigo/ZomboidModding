@@ -242,8 +242,8 @@ New-PosterPlaceholder -Caminho (Join-Path $raiz 'preview.png') -Texto $Nome
 $estadoGit = 'pulado (-SemGit)'
 if (-not $SemGit) {
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        $saida = & git -C $raiz init -q -b master 2>&1
-        if ($LASTEXITCODE -ne 0) { $saida = & git -C $raiz init -q 2>&1 }
+        # O nome da branch vem do init.defaultBranch de quem roda, nao daqui.
+        $saida = & git -C $raiz init -q 2>&1
         if ($LASTEXITCODE -eq 0) {
             $estadoGit = 'repositorio inicializado (nada commitado ainda)'
         }
