@@ -389,6 +389,19 @@ Dois valores da família que não são óbvios por grep de nome:
 traduz para "Flashlight - Heavy Duty", e `Base.HandTorch` (`:1855`) para "Flashlight". **Não existe
 tocha acesa no jogo base**, o que libera o nome para mod.
 
+**Feixe (pacote que se desfaz com duplo clique) tem dois moldes.** `[levantado 2026-10-31]`
+
+- **Uma receita por tipo**: `LogStacks2/3/4` (`PZ/media/scripts/generated/items/normal.txt:9309-9340`)
+  com `MakeTwoLogStack`…`UnbundleFirewood` (`PZ/media/scripts/generated/recipes/recipes_carpentry.txt:135-273`),
+  montando com `tags[base:rope]`; a corda **não volta** ao desfazer. O `OnCreate =
+  RecipeCodeOnCreate.createLogStack`/`splitLogStack` é Java (zero ocorrência em `media/lua`).
+- **Uma receita para N tipos**: `stack_items`/`unstack_items`
+  (`PZ/media/scripts/generated/recipes/recipes_packing.txt:762-810`), com `itemMapper` ligando
+  unidade a pacote; os itens apontam `DoubleClickRecipe = unstack_items` (`normal.txt:9390`).
+
+O peso do pacote não segue regra: `LogStacks` pesa 1/3 da soma das toras, `TwigsBundle` (`:9381`)
+~83% da soma dos gravetos.
+
 **O par apagado/aceso é o padrão canônico, e são dois itens, não um.** `item Candle`
 (`drainable.txt:2153`) declara `DoubleClickRecipe = LightCandle`; `item CandleLit` (`:2167`) declara
 `DoubleClickRecipe = ExtinguishCandle` e `ReplaceOnExtinguish = Base.Candle`. As duas receitas ficam
@@ -763,6 +776,10 @@ Campos de topo:
   forma — devolver `true` para os itens que ela não julga. O `OnCreate` Lua de mod tem assinatura
   `(craftRecipeData, character)`
   (`STEAM/2335368829/mods/Authentic Z - Backpacks+/42/media/lua/server/AuthenticZBackpacks+_RecipeCode.lua:165`).
+  `[levantado 2026-10-31]` Os itens chegam por `craftRecipeData:getAllConsumedItems()` e
+  `craftRecipeData:getAllCreatedItems()` (mesmo arquivo, `:212`; são os dois acessores mais usados em
+  `STEAM/`), `ArrayList` Java. O jogo, no `OnCreate` de construção, usa `getAllInputItems()`
+  (`PZ/media/lua/server/BuildRecipeCode/buildRecipeCode.lua:562`). Uso observado, não contrato.
   `OnTest = RecipeCodeOnTest.openFire` (`PZ/media/scripts/generated/recipes/recipes_spears.txt:27`) é
   a condição "há fogo aceso por perto" — é como se acende algo numa fogueira existente sem gastar
   isqueiro. Um mod reusa isso sem escrever Lua: `STEAM/3402516345/mods/B42Survival/.../recipes_Survival.txt:350`
@@ -1481,6 +1498,10 @@ O sétimo da lista antiga, **`animation`**, saiu para [animacao.md](animacao.md)
 
 ## Pontos a confirmar
 
+- **`DoubleClickRecipe` apontando para receita de módulo que não é `Base`.** Todo uso observado, no
+  jogo e em `STEAM/` (`3402516345/.../Items_Survival.txt:22`, `module Base`), está em `module Base`;
+  não se sabe se o nome sem módulo resolve dentro do módulo do mod nem se a forma `Modulo.Receita` é
+  aceita. *A confirmar in-game.* `[aberto 2026-10-31]`
 - **`ReplaceOnCooked` com fullType de mod** (`ReplaceOnCooked = <Mod>.X`). Os três usos vanilla
   apontam para `Base.*`. Também não foi levantado em quais fontes de calor a troca acontece (forno,
   fogueira, churrasqueira, panela). *A confirmar in-game.* `[aberto 2026-10-29]`

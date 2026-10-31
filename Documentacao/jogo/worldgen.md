@@ -95,6 +95,35 @@ sorteia dentro da lista.
 O idioma é sempre o mesmo: tabela `local`, registro na última linha em
 `worldgen.features.<CATEGORIA>["<nome>"]`.
 
+### As pedronas são `ORE` e nenhum Lua as minera `[levantado 2026-10-31]`
+
+`features/ore/boulders.lua:1-29` registra `worldgen.features.ORE["boulders"]` com `boulders_0`…`35`;
+os grupos aninhados (`{ { "boulders_19", "boulders_18" }, { "boulders_16", "boulders_17" } }`) são
+as peças de um multi-tile. O papel de cada sprite está nas tile properties, não no `.lua`
+(`PZ/media/newtiledefinitions.tiles.txt`, bloco `file = boulders` a partir de `:11187`):
+
+| Sprites | `CustomName` | Forma |
+|---|---|---|
+| `boulders_0`…`7` | — | 1 tile |
+| `boulders_8`…`15` | `LargeStone` ou `Stone2` | 1 tile |
+| `boulders_16`…`31` | `Boulder` | 2×2, `GroupName = Large[1]`/`large[2..4]` + `SpriteGridPos` |
+| `boulders_32`…`35` | `Boulder` | 2 peças, `GroupName = Medium[1..2]` |
+
+**`CustomName = Boulder` não é tratado por nenhum `.lua` do jogo.** O que existe é a remoção de
+minério, `ISPickAxeGroundCoverItem` (`PZ/media/lua/shared/TimedActions/ISPickAxeGroundCoverItem.lua`):
+o `objectType` é o `CustomName` do objeto (`:205`), o drop é escolhido por ele — `ironOre*`,
+`copperOre*`, `FlintBoulder`, `LimestoneBoulder` (`:80-128`) — e o `complete` remove **um** objeto só
+(`:140`), sem olhar o multi-tile. Quem dispara é o clique com ferramenta em
+`CFarming_Interact.lua:98-99` (`square:getOre()`) e a opção `ContextMenu_Remove_Ore`
+(`EN/ContextMenu.json:700`), que **não aparece em nenhum `.lua`** — o menu é montado no Java.
+
+Duas armadilhas para quem copiar a ação:
+
+- `:146` testa `self.pickaxe` (minúsculo), mas o campo preenchido é `self.pickAxe` (`:44`, `:217`):
+  o desgaste da ferramenta **nunca roda**.
+- Remover um multi-tile pede as peças irmãs:
+  `obj:getSpriteGridObjectsIncludingSelf(ArrayList.new())` (`PZ/media/lua/server/BuildingObjects/ISDestroyCursor.lua:217`).
+
 ## `Selection.lua` — as faixas
 
 36 linhas, e é a tradução de ruído procedural em nome legível. Seis eixos, cada um com faixas
@@ -272,6 +301,10 @@ Tudo em `media/lua/server/` — geração de mundo é autoritativa, ver
 [persistencia-e-multiplayer.md](persistencia-e-multiplayer.md).
 
 ## Pontos a confirmar
+
+- `[2026-10-31]` **Se `square:getOre()` e a opção `ContextMenu_Remove_Ore` (ambos Java) reconhecem
+  a pedrona `CustomName = Boulder`.** Se sim, o jogo já a remove sem drop e sem tirar as peças
+  irmãs; se não, ela é indestrutível no vanilla. Resolve com clique direito in-game com picareta.
 
 - **Se `WorldGenUtils.INSTANCE:getFiles("lua/server/WorldGen/features")` enxerga a pasta de um mod.**
   É a pergunta que decide se a área é moddável por arquivo novo ou se só dá para escrever na tabela
