@@ -206,8 +206,26 @@ Não confundir com o `type = "WorldGen"` do `objects.lua`, que registra uma **re
 - **Se um mod pode trazer `objects.lua`/`regions.lua`** para um mapa **do jogo**, ou se o arquivo só
   é lido da pasta do próprio mapa do mod. O `removeZonesForLotDirectory` por pasta (`:88`) sugere
   isolamento por diretório, o que apontaria para "não" — mas é inferência.
-- **Formato de `.lotpack`/`.lotheader`/`.bin`** — binário, não inspecionado. Nada em `media/lua` os
-  monta; são saída de ferramenta, como o `.pack` de [tiles.md](tiles.md).
+- **Formato de `.lotpack`/`.lotheader`/`.bin`** — binário. Nada em `media/lua` os monta; são saída
+  de ferramenta, como o `.pack` de [tiles.md](tiles.md). `[2026-11-01, buildid 25485521]` O
+  **registro de cômodo do `.lotheader`** foi lido por bytes, e é o único jeito achado de localizar
+  um tipo de prédio no mapa. Em `media/lua` não há nada que devolva o nome da cidade de uma
+  coordenada ou que procure prédio por nome de cômodo (ver
+  [distribuicao-loot.md](distribuicao-loot.md), "Prédio e cômodo são metadado do mapa").
+  - No B42 **o mapa inteiro mora em `Muldraugh, KY/`** (12.213 arquivos, 4.065 `.lotheader`). As
+    outras dez pastas de cidade têm 3 arquivos cada (`map.info`, `spawnpoints.lua`, `thumb.png`). A
+    cidade de uma coordenada só se deduz por proximidade, por exemplo com os `posX/posY` do
+    `spawnpoints.lua` de cada pasta.
+  - Nome do arquivo `cx_cy.lotheader` = célula de **256 tiles**; coordenada do mundo = `c*256 + local`.
+  - O cabeçalho abre com `LOTH` + int32 `1` + a lista de tiles terminados em `\n`. Cada cômodo vem
+    como nome terminado em `\n`, int32 nível (z, pode ser negativo), int32 número de retângulos e,
+    para cada retângulo, int32 `x, y, w, h` **locais à célula**, little-endian. Isso foi observado em
+    `Muldraugh, KY/25_21.lotheader`, no offset `0x1daf1` (`secondaryhall`, nível 1, 6 retângulos). O
+    resto do registro e o bloco de prédios não foram decodificados.
+  - Conferência: `Muldraugh, KY/32_45.lotheader` dá o `secondaryhall` no nível 0 em x 8326–8356,
+    y 11595–11633, que é a escola de Rosewood.
+  - A confirmar: se este layout vale para todo `.lotheader` (versão diferente de `1`), o que vem
+    depois dos retângulos e se a leitura bate in-game com `getRoomAt` no mesmo ponto.
 - **`worldmap.xml`, `worldmap-forest.xml`, `streets.xml`** — **abertos**; o que sobra é a semântica
   das propriedades. Os dois formatos:
 

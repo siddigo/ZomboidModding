@@ -508,6 +508,13 @@ demonstração:
   `dresser`, `filingcabinet`, `locker`, `shelves`, `sidetable`, `wardrobe` e `other` próprios,
   apontando para as listas `*Child`. `hoarderbedroom` (`:9719`) é outra, e só tem `other` →
   `JunkHoard`. Existe ainda `ww_bedroom` (`:15683`).
+- `[2026-11-01, buildid 25485521]` **O armário escolar fica no corredor, não na sala.**
+  `secondaryhall` (`:13978`) só tem `locker`, que aponta para `SchoolLockers`/`SchoolLockersBad`. As
+  salas de aula (`classroom` `:6397`, `elementaryclassroom` `:7984`, `secondaryclassroom` `:13943`)
+  não têm `locker`. `elementaryschool` (`:8027`) declara `locker`, mas nenhum dos 4.065 `.lotheader`
+  de `Muldraugh, KY/` tem cômodo com esse nome. Já `secondaryhall` aparece em Ekron, Brandenburg,
+  Riverside, Rosewood e em três prédios de Louisville, e não aparece em Muldraugh, West Point nem
+  March Ridge (método em [mapas-e-zonas.md](mapas-e-zonas.md)).
 
 O efeito prático: o mesmo item pode nascer por meia dúzia de pares `(roomType, containerType)`
 diferentes. `Diary1`/`Diary2` estão em `BedroomDresser`
@@ -825,6 +832,15 @@ que o motor dos mapas anotados chama (seção seguinte).
 jogador é o próprio motor dos mapas anotados: `StashSystem.checkStashItem` chama
 `getRoomAt(buildingX, buildingY, 0)` com a coordenada da stash no momento em que o mapa nasce, e dali
 `RoomDef.getBuilding().isHasBeenVisited()` (bytecode).
+
+`[2026-11-01]` **Tudo isso pergunta "o que tem neste ponto", nunca "onde fica X".** Os usos de
+`getMetaGrid():` em `media/lua` são `getZonesAt`, `getRoomAt`, `getAssociatedBuildingAt`,
+`isValidChunk`, `isZoneAbove` e os dois `register*Zone`. Nenhum devolve o nome da cidade
+(`getZonesAt` dá o tipo `TownZone`, sem nome; ver [coleta-foraging.md](coleta-foraging.md)), e
+nenhum procura prédio por nome de cômodo no mapa. Mod que precisa de "a escola da cidade" tem de
+cadastrar a coordenada à mão. Para levantar as coordenadas, existe o método do `.lotheader` em
+[mapas-e-zonas.md](mapas-e-zonas.md) (pendência de formato). A confirmar: se algum método Java sem
+uso em Lua lista prédios do mapa inteiro.
 
 Métodos públicos que valem conhecer (`javap`, buildid 24909800), nenhum com uso em Lua achado salvo
 onde citado:
