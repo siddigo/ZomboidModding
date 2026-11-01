@@ -58,9 +58,9 @@ Ordem aproximada do ciclo de vida, do mais cedo ao mais tarde:
 |---|---|---|
 | `OnGameBoot` | jogo abriu, antes do menu | ajustar o que os `.txt` já carregaram — **não** registrar trait/profissão (ver abaixo) |
 | `OnMainMenuEnter` | menu principal | |
-| `OnNewGame` | partida nova criada | estado inicial do mundo |
-| `OnInitGlobalModData` | ModData pronta | criar/ler a tabela persistente do mod |
 | `OnInitWorld` | mundo montado | |
+| `OnInitGlobalModData` | ModData pronta | criar/ler a tabela persistente do mod; reescrever receita (ver abaixo) |
+| `OnNewGame` | partida nova criada | estado inicial do mundo |
 | `OnGameStart` | partida carregada, jogador existe | **o gancho mais usado** — UI, keybind, init geral |
 | `OnCreatePlayer` | jogador instanciado | |
 | `OnPlayerUpdate` / `OnTick` | todo frame/tick | evitar; custo alto |
@@ -68,6 +68,15 @@ Ordem aproximada do ciclo de vida, do mais cedo ao mais tarde:
 | `OnPostSave` | após salvar | |
 | `OnPlayerDeath` | | |
 | `OnResetLua` | Lua recarregada | limpar estado global |
+
+**`OnInitWorld` → `OnInitGlobalModData` → `OnNewGame` é ordem medida, não inferida**
+`[levantado 2026-11-01]`: os três disparam dentro de `zombie.iso.IsoWorld.init()` (bytecode de
+`projectzomboid.jar`, `javap -c`), nos offsets 2102 (`OnInitWorld`), 2820 (`GlobalModData.instance.init()`,
+que é quem chama `triggerEvent("OnInitGlobalModData", …)`) e 4673/5492 (`OnNewGame`). Entre os dois
+últimos, no offset 2926/2932, vêm `WorldDictionary.init()` e `ScriptManager.PostWorldDictionaryInit()` —
+o passo que resolve os itens de cada linha de receita. Por isso receita reescrita em
+`OnInitWorld`/`OnInitGlobalModData` tem as linhas novas resolvidas pelo motor; depois disso, nada
+foi visto re-resolvendo (a confirmar, ver pendências) (ver [scripts-txt.md](scripts-txt.md), "Reescrever a receita em runtime").
 
 ### `OnGameStart` tem duas armadilhas que não aparecem em singleplayer
 
@@ -317,6 +326,19 @@ registro Java). Inicial minúscula não é critério de descarte.
 `OnWeatherPeriodStage` `OnWeatherPeriodComplete` `OnWarUpdate`
 </details>
 
+### Não existe evento de dano em estrutura `[levantado 2026-11-01, javap no .jar]`
+
+Zumbi batendo em porta, janela ou objeto construído não dispara evento Lua: `Thump` de
+`zombie.iso.objects.IsoDoor`/`IsoWindow`/`IsoThumpable` só mexe na vida, toca som e, em porta e
+thumpable, chama `sync()`. O único evento ligado a dano em estrutura é `OnWeaponHitThumpable`, cuja
+string aparece em `IsoDoor`, `IsoWindow`, `IsoThumpable` e `IsoBarricade` — golpe de **arma do
+jogador**, não de zumbi. Mod que precisa reagir à vida de estrutura faz varredura periódica
+(`EveryOneMinute`) em volta do jogador.
+
+`OnPostWallSquareDraw` e `OnPostTilesSquareDraw` estão declarados em `zombie.Lua.LuaEventManager`,
+mas nenhuma outra classe do `.jar` contém a string: **são declarados e nunca disparados**. Registrar
+neles não dá erro e não roda nada.
+
 ## Os 19 eventos que a lista dos 182 não enxerga
 
 A lista acima foi montada varrendo `Events.<nome>`, e por construção ela só vê evento que **alguém
@@ -408,8 +430,10 @@ não um menu próprio. É a única coisa em `media/lua` explicitamente nomeada c
   `OnHitZombie`.
 - A lista definitiva de eventos do motor: `LuaEventManager` é Java, dentro de
   `PZ/projectzomboid.jar`, não lido aqui. Os 182 acima são os *usados* pelo jogo.
-- Ordem de disparo exata entre `OnGameBoot`, `OnInitWorld`, `OnInitGlobalModData` e `OnGameStart` —
-  a ordem da tabela acima é inferida do propósito de cada um, não medida.
+- Onde `OnGameBoot`, `OnMainMenuEnter` e `OnGameStart` caem em relação aos três de `IsoWorld.init()`
+  — só `OnInitWorld` → `OnInitGlobalModData` → `OnNewGame` foi medido (ver logo após a tabela); o
+  resto da tabela segue inferido do propósito de cada evento. Também a confirmar: se
+  "reescrita em `OnGameStart` não resolve" se confirma in-game, ou se algo re-resolve depois.
 - Se `Events.<nome>.Add(...)` funciona para os **19 eventos só-disparados** da seção acima. Vale para
   os 19 de uma vez e é a mesma pergunta aberta em [coleta-foraging.md](coleta-foraging.md).
 - Quem escuta cada um dos 19 — a varredura prova que **ninguém no jogo** escuta, não o que o motor

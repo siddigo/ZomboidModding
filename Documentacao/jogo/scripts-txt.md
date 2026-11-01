@@ -911,6 +911,20 @@ que chama tudo em `Events.OnInitGlobalModData` (`:1052`) a partir de `shared/`, 
 dentro do handler. Receita de **construção** (`entity`) sai por `getBuildableRecipe(nome)` — ver
 [construcao.md](construcao.md).
 
+`[levantado 2026-11-01]` Dois detalhes do bytecode (`zombie.scripting.entity.components.crafting`,
+`javap -c`) que decidem como escrever isso:
+
+- **`Load` com bloco `inputs` acrescenta, não substitui.** `CraftRecipe.LoadIO` faz `inputs.add` e
+  `ioLines.add` para cada linha. Trocar **uma** linha sem copiar o resto do custo: achar a
+  `InputScript` por `:getOriginalLine()` (a linha como estava no `.txt`), tirá-la de `getInputs()` **e**
+  de `getIoLines()` (`:remove(inputScript)`), e dar `Load(nome, "{ inputs { <linha nova>, } }")`.
+- **O momento importa.** `InputScript.getPossibleInputItems()` só devolve um cache preenchido em
+  `InputScript.OnPostWorldDictionaryInit()` (`OnScriptsLoaded` dela é vazio). Linha carregada depois de
+  `ScriptManager.PostWorldDictionaryInit()` fica sem item resolvido. `OnInitGlobalModData` dispara antes
+  desse passo — ordem em [eventos-lua.md](eventos-lua.md), logo após a tabela do ciclo de vida.
+
+Uso: mod de teste, ainda não confirmado in-game (pendência abaixo).
+
 ## `entity` — o sistema de estações do B42
 
 Novidade do B42: bancada, forno, fogueira etc. são `entity` com `component`. Canônico —
@@ -1498,6 +1512,10 @@ O sétimo da lista antiga, **`animation`**, saiu para [animacao.md](animacao.md)
 
 ## Pontos a confirmar
 
+- **Trocar uma linha de `inputs` em runtime** (remover a `InputScript` de `getInputs()`/`getIoLines()`
+  e `Load` só com a linha nova, em `OnInitGlobalModData`). Montado pelo bytecode, ver "Reescrever a
+  receita em runtime"; falta ver in-game a receita aceitando o item novo, inclusive em multiplayer.
+  `[aberto 2026-11-01]`
 - **`DoubleClickRecipe` apontando para receita de módulo que não é `Base`.** Todo uso observado, no
   jogo e em `STEAM/` (`3402516345/.../Items_Survival.txt:22`, `module Base`), está em `module Base`;
   não se sabe se o nome sem módulo resolve dentro do módulo do mod nem se a forma `Modulo.Receita` é

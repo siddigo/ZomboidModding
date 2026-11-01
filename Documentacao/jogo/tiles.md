@@ -258,7 +258,54 @@ Isso vale como aviso sobre a seção **mapping** da fonte em geral: ela é a ún
 cada lista como candidata a confirmar, não como contrato — ver
 [fontes-externas.md](../fontes-externas.md).
 
+## Um mod que traz tileset próprio `[levantado 2026-11-01]`
+
+Três peças, todas necessárias:
+
+- `mod.info` com `pack=<nome>` e `tiledef=<nome> <número>` — o número tem de ficar entre 100 e
+  8189 (erro de `ChooseGameInfo.readModInfoAux` em [testar-e-debugar.md](testar-e-debugar.md));
+- `common/media/<nome>.tiles` (binário do TileZed; o `.tiles.txt` ao lado é opcional);
+- `common/media/texturepacks/<nome>.pack`.
+
+Exemplo publicado: `STEAM/3596827035/mods/ShelterHold_Beehive/42/mod.info` (`pack=Hold_BeehiveTiles`,
+`tiledef=Hold_BeehiveDef 7924`), com `common/media/Hold_BeehiveDef.tiles` e
+`common/media/texturepacks/Hold_BeehiveTiles.pack`. O número do `tiledef` compõe o ID dos sprites e
+**colide** entre mods: censo de `STEAM/` em 2026-11-01 — 0216, 0217, 0218, 222, 446, 500, 515, 714,
+999, 1122–1125, 1234, 1235, 3333, 3452, 4242–4244, 4729, 5520, 5620, 6985, 7001, 7924, 9476 (o 9476
+está fora da faixa válida e aparece mesmo assim).
+
+## Sprite por cima de um objeto: overlay × attached `[levantado 2026-11-01, javap no .jar]`
+
+`zombie.iso.IsoObject` tem dois mecanismos:
+
+- **`setOverlaySprite(nome, r, g, b, a)`** — slot **único**. Já é usado pela placa pintada
+  (`PZ/media/lua/shared/BuildingObjects/TimedActions/ISPaintSignAction.lua:35`); um mod que escreva
+  nele apaga o que estava.
+- **Lista de attached sprites** — `AttachExistingAnim(sprite, 0, 0, false, 0, false, 0.0)`
+  (`PZ/media/lua/server/ClientCommands.lua:187`), `RemoveAttachedAnim(índice)` 0-based
+  (`ClientCommands.lua:103`), iteração por `getAttachedAnimSprite()` +
+  `inst:getParentSprite():getName()`
+  (`PZ/media/lua/client/DebugUIs/DebugChunkState/DebugChunkState_ObjectProperties.lua:126-134`).
+  Vários convivem no mesmo objeto.
+
+**O attached vai para o save**: `IsoObject.save` grava o ID de cada instância, e `IsoObject.load`
+resolve por `IsoSprite.getSprite(manager, id)` com checagem de nulo depois. Sprite anexado precisa
+então ser de tileset registrado (ID estável); `IsoSprite.new()` + `LoadSingleTexture`, o caminho
+do cursor de construção (`PZ/media/lua/server/BuildingObjects/ISBuildingObject.lua:552-555`), não
+tem ID de tileset.
+
+Vida do objeto como razão: `getThumpCondition()` da interface
+`zombie.iso.objects.interfaces.Thumpable` devolve `clamp(health, 0, max) / max` em `IsoDoor`,
+`IsoWindow` e `IsoThumpable`. É a única forma uniforme: `IsoWindow` tem `maxHealth` **privado**,
+sem `getMaxHealth()`, e não implementa `IHasHealth` (que `IsoDoor`, `IsoThumpable` e `IsoBarricade`
+implementam). Parede do mapa é `IsoObject` sem vida.
+
 ## Pontos a confirmar
+
+- **Se `getThumpCondition()` é chamável do Lua.** Público em classe exposta, mas zero chamadas em
+  `media/lua`.
+- **O que acontece no load com attached sprite de tileset que sumiu** (mod removido). O bytecode
+  sugere que o nulo é pulado; não testado in-game.
 
 - Qual dos três artefatos o jogo lê em runtime — se o `.tiles` binário torna o `.tiles.txt`
   dispensável na distribuição de um mod, ou se ambos precisam ir junto. Os dois `.tiles` sem par de

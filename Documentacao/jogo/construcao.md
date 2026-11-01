@@ -113,6 +113,11 @@ a distinção está em [timedactions.md](timedactions.md).
 `zombie.scripting.entity.components.crafting.CraftRecipe`). Ou seja, mudar o custo de uma `entity`
 sem redeclarar o bloco segue o mesmo caminho da receita comum
 ([scripts-txt.md](scripts-txt.md), "Reescrever a receita em runtime"). `[levantado 2026-10-31]`
+Para mexer em **todas** as construções que pedem um item (ex.: toda porta que pede `[Base.Doorknob]`),
+`getScriptManager():getAllBuildableRecipes()` devolve a lista: percorre `getAllGameEntities()` e
+fica com o `CraftRecipe` de cada componente cuja receita `isBuildableRecipe()` (bytecode de
+`ScriptManager`). Varrer essa lista em vez de nomear as entidades pega também porta de outro mod.
+`[levantado 2026-11-01]`
 
 ## A ponte `.txt` → Lua: os campos `On*`
 

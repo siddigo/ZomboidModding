@@ -386,6 +386,13 @@ depois de restart do servidor e relogin.
 
 `instanceItem` tem 189 ocorrências em 78 arquivos de `media/lua`; é a função de criação de item.
 
+### Vida de porta, janela e thumpable `[levantado 2026-11-01, javap no .jar]`
+
+`health` entra no `syncIsoObjectSend` de `IsoDoor`, `IsoThumpable` e `IsoWindow`. `IsoDoor.Thump`
+e `IsoThumpable.Thump` chamam `sync()` depois do dano; `IsoWindow.Thump` **não** — só o
+`GameServer.smashWindow` quando quebra. Logo, em MP, a vida intermediária de janela pode não chegar
+aos outros clientes (a confirmar in-game).
+
 ## Lado do mod
 
 - Handler de comando vindo do cliente → `media/lua/server/`. Handler do que o servidor manda →
