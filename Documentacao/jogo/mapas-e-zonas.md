@@ -217,15 +217,20 @@ Não confundir com o `type = "WorldGen"` do `objects.lua`, que registra uma **re
     cidade de uma coordenada só se deduz por proximidade, por exemplo com os `posX/posY` do
     `spawnpoints.lua` de cada pasta.
   - Nome do arquivo `cx_cy.lotheader` = célula de **256 tiles**; coordenada do mundo = `c*256 + local`.
-  - O cabeçalho abre com `LOTH` + int32 `1` + a lista de tiles terminados em `\n`. Cada cômodo vem
-    como nome terminado em `\n`, int32 nível (z, pode ser negativo), int32 número de retângulos e,
-    para cada retângulo, int32 `x, y, w, h` **locais à célula**, little-endian. Isso foi observado em
-    `Muldraugh, KY/25_21.lotheader`, no offset `0x1daf1` (`secondaryhall`, nível 1, 6 retângulos). O
-    resto do registro e o bloco de prédios não foram decodificados.
+  - `[2026-11-01, buildid 25485521]` **Layout inteiro**, little-endian: `LOTH`, int32 versão (`1`),
+    int32 número de tiles e os nomes terminados em `\n`; int32 largura e altura em chunks (`8`, `8`),
+    int32 z mínimo e máximo; int32 número de cômodos e, por cômodo: nome terminado em `\n`, int32
+    nível (z, pode ser negativo), int32 número de retângulos, cada retângulo int32 `x, y, w, h`
+    **locais à célula**, int32 número de objetos e 3 int32 por objeto; int32 número de prédios e,
+    por prédio, int32 `n` seguido de `n` índices de cômodo; por fim `chunksW*chunksH*16` bytes
+    (1.024 numa célula de 256), pelo tamanho a densidade de zumbi. Lido assim, **os 4.065
+    `.lotheader` de `Muldraugh, KY/` fecham exatos**, todos com versão `1` e nenhum byte sobrando —
+    é essa a prova do layout. O significado dos 3 int32 do objeto e dos bytes finais é inferência.
   - Conferência: `Muldraugh, KY/32_45.lotheader` dá o `secondaryhall` no nível 0 em x 8326–8356,
-    y 11595–11633, que é a escola de Rosewood.
-  - A confirmar: se este layout vale para todo `.lotheader` (versão diferente de `1`), o que vem
-    depois dos retângulos e se a leitura bate in-game com `getRoomAt` no mesmo ponto.
+    y 11595–11633, que é a escola de Rosewood. O bloco de prédios agrupa cômodos de vários andares,
+    e um mesmo prédio físico pode virar mais de um prédio no arquivo (ex.: subsolo à parte).
+  - A confirmar: se a leitura bate in-game com `getRoomAt` no mesmo ponto, e se prédio na borda da
+    célula aparece em um `.lotheader` só.
 - **`worldmap.xml`, `worldmap-forest.xml`, `streets.xml`** — **abertos**; o que sobra é a semântica
   das propriedades. Os dois formatos:
 

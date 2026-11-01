@@ -662,6 +662,22 @@ sintaxe é carregar o jogo.
   carga. Quem aplica a ordem em runtime está no `projectzomboid.jar` e não é legível aqui. Agrava:
   **zero** dos 367 `mod.info` de `STEAM/` declaram `loadAfter=` ou `loadBefore=`, então não há uso
   real para observar.
+  `[2026-11-01]` Confirmado no Lua do seletor, ainda do lado da UI: ativar um mod **ativa os requeridos
+  em cascata** — `forceActivateMods` percorre `getRequire()` e chama a si mesmo para cada id
+  (`PZ/media/lua/client/OptionScreens/ModSelector/ModSelectorModel.lua:397-416`); desativar derruba
+  quem depende dele (`:418-425`). O lookup é `self.mods[reqId]` (`:412`): id que não casa exatamente
+  com o `id=` do outro mod é **ignorado em silêncio**. E `correctAndSaveModOrder` (`:138-163`) grava a
+  lista ativa pondo os ids de `getRequire()` antes do mod — um nível só, sem recursão. Se a carga em
+  runtime respeita essa lista continua no `.jar`.
+- `[2026-11-01]` **O que significam as barras em `require=`.** Censo de `STEAM/`: além do id simples
+  (`require=damnlib`, 40 `mod.info`), aparecem `require=\Bandits2` e
+  `require=\1299328280/ToadTraits,\KillCount` — barra invertida antes do id, e às vezes um id
+  numérico de item da Workshop com `/` antes do id do mod; listas separadas por vírgula nas três
+  formas. O mesmo mod aparece nas duas grafias em itens diferentes (`fhqMotoriusZone` e
+  `\fhqMotoriousZone`, `VanillaVehiclesAnimated` e `\VanillaVehiclesAnimated`). Como o seletor busca
+  `self.mods[reqId]` direto, a forma com barra só funciona se o Java normalizar o valor (ou a chave
+  de `self.mods`) — não verificado. A forma sem barra funciona: observado in-game em 2026-11-01, mod
+  de teste com `require=<id>` simples carregando em MP dedicado.
 - **Se `dependencies=`, `modLink=` e `zomboidversion=` são campos lidos ou lixo tolerado.** Aparecem
   em `STEAM/3446915394/mods/simbatraduz/42/mod.info`, que usa um conjunto de campos divergente do
   nosso — tem `version=` e `zomboidversion=42` no lugar de `modversion=`/`versionMin=`. **Nenhum dos

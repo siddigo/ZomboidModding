@@ -491,6 +491,36 @@ E vale o limite escrito no cabeçalho do próprio `LootLog` (`:3`): item de *ran
 *(As afirmações sobre `ItemPickerJava` vieram de `javap` sobre o `.jar`, não do `media/` — ver
 "Como isto foi levantado — bytecode do `.jar`", mais abaixo, para o baseline diferente delas.)*
 
+### No cadáver: `roomType` é `"Zombie"`
+
+O inventário do zumbi também passa por este evento, com argumentos que não se parecem com sala e
+móvel. Lido por `javap -c` sobre `ItemPickerJava.fillContainerInternal` (buildid 25485521,
+2026-11-01, bytecode):
+
+| Disparo | `roomType` | `containerType` | 3º argumento |
+|---|---|---|---|
+| inventário do cadáver (offsets 430-439) | `"Zombie"` | `container:getType()`: `"inventorymale"` ou `"inventoryfemale"` | `ItemContainer`, com `getParent()` = `IsoDeadBody` |
+| bolsa que o zumbi carrega, definição (261-277) | `"Zombie Bag"` | tipo do item da bolsa | `ItemPickerJava$ItemPickerContainer` (**não** contêiner) |
+| bolsa que o zumbi carrega, conteúdo (320-336) | `"Zombie Bag"` | tipo do item da bolsa | `ItemContainer` da bolsa (`InventoryContainer.getItemContainer()`) |
+
+- As bolsas disparam **antes** do cadáver: quando chega o `"Zombie"`, elas já estão cheias.
+- Esqueleto não enche (offsets 69-99, `IsoDeadBody.isSkeleton`).
+- Retorna sem fazer nada sob `GameClient.client` (0-18) e quando `getSourceGrid()` é nulo (24-42):
+  em MP isto roda no servidor.
+- O `ItemContainer` da bolsa não tem `getParent()` com quadrado. Quem quer a posição precisa
+  partir do evento `"Zombie"` ou subir com `container:getOutermostContainer()`
+  (`PZ/media/lua/client/ISUI/LootWindow/ISLootWindowContainerControls.lua:211`).
+
+**O preenchimento é preguiçoso**, como em qualquer contêiner: acontece quando o jogador abre o
+cadáver pela primeira vez. `ItemPicker.fillContainer` roda quando `not container:isExplored()`, e
+em MP o cliente pede ao servidor com `requestServerItemsForContainer`
+(`PZ/media/lua/client/ISUI/ISInventoryPage.lua:1106-1108`, `:1512-1518`).
+
+**O cadáver não está em `square:getObjects()`.** `IsoDeadBody` mora em
+`square:getStaticMovingObjects()`, e é por lá que o jogo o encontra
+(`PZ/media/lua/client/DebugUIs/ISRemoveItemTool.lua:88-90`). Quem procura um item "no quadrado"
+percorrendo só `getObjects()` não acha o que está num corpo.
+
 ### Filtrar por `roomType`/`containerType` custa um censo das chaves
 
 Quem escuta `OnFillContainer` (ou lê `Distributions` direto) quase sempre quer restringir a um tipo
@@ -929,6 +959,48 @@ móvel dela.
 
 `buildingsToDo` e a lista de mapas lidos vão para o save (`StashSystem.save`/`load`).
 
+### `[2026-11-01]` A marcação no mapa, o item de mapa e o que o Lua alcança
+
+Levantado por `javap -c`/`-v` (buildid 25485521, bytecode) e no `media/lua`:
+
+- **`doStashItem(stash, item)` é quem escreve as marcas** — `customName` vira `setName`; para
+  `type == "Map"` exige `MapItem` (senão `IllegalArgumentException`), e cada `addStamp` vira símbolo
+  em `MapItem.getSymbols()`: textura com âncora 0.5/0.5, escala 0.666 e `r,g,b,1`; texto via
+  `addTranslatedText(text, "note", …)` só se `Translator.getTextOrNull(text)` existir. Fecha com
+  `removeFromPossibleStash(stash)` e `item:setStashMap(stash.name)`. `StashSystem` é exposto ao Lua: o
+  painel de debug chama `StashSystem.doStashItem(self.selectedStash, map)` sobre um
+  `instanceItem(...)` (`PZ/media/lua/client/DebugUIs/StashDebug.lua:95-99`).
+- **`MapItem.getSymbols()` é `@HiddenFromLua`** (único método marcado da classe, que é `@UsedFromLua`).
+  Lua **não** grava símbolo direto num item de mapa. Do Lua, `setMapID`/`getMapID` têm uso observado
+  (`PZ/media/lua/client/ISUI/Maps/Editor/WorldMapEditorMode_Maps.lua:83`,
+  `ISMapDefinitions.lua:435`). `MapItem.save` grava `mapId` e os símbolos junto do item (bytecode).
+- **O caminho Lua para símbolo é a API da UI**: com o mapa aberto, `mapAPI:setMapItem(mapObj)`
+  (`PZ/media/lua/client/ISUI/Maps/ISMap.lua:40`) liga a UI ao item, e
+  `mapAPI:getSymbolsAPIv2()` (`ISWorldMapSymbols.lua:1874`) faz `addTexture(id, x, y)` +
+  `setRGBA`/`setAnchor`/`setScale` (`ISWorldMapSymbols.lua:137-140`) — é o que o jogador faz ao
+  desenhar. `WorldMapSymbols.addTexture` do Java tem 7 e 10 argumentos (`symbolID, x, y, r, g, b, a`).
+- **Qual mapa a UI desenha:** `LootMaps.callLua` procura `LootMaps.Init[item:getStashMap()]` **antes**
+  de `LootMaps.Init[item:getMapID()]` (`ISMapDefinitions.lua:428-441`); a função define dados, estilo e
+  `setBoundsInSquares` (exemplo `ISMapDefinitions.lua:1014-1020`). `item Map` em
+  `PZ/media/scripts/generated/items/map.txt:175` é o único `base:map` sem campo `Map =`.
+- **Ler o mapa** (`ISInventoryPaneContextMenu.onCheckMap`, `:2661`) chama sempre `map:doBuildingStash()`
+  (`:2690`), e `ISMap:initMapData` roda o `Init` e `MapUtils.revealKnownArea` — o retângulo do mapa
+  passa a conhecido no mapa-mundo (`ISMap.lua:391-406`, `ISMapDefinitions.lua:377-384`; em MP, comando
+  `map.setKnownInSquares`, `PZ/media/lua/server/ClientCommands.lua:1239`). O botão "revelar" só aparece
+  em item com `getStashMap()` (`ISMap.lua:97`), e `ISMap:copySymbolsToWorldMap` é um **stub vazio**
+  (`ISMap.lua:545-547`): o jogo não copia marca de mapa de papel para o mapa-mundo.
+- **`prepareBuildingStash(nome)` exige `getStash(nome)`** registrada em `allStashes`; sem ela, não faz
+  nada (bytecode). Com ela, `doBuildingStash` chama `BuildingDef.setAllExplored(true)` **antes** de
+  olhar `spawnTable`; com `spawnTable` sem sala em `ItemPickerJava.rooms`, só o passo de
+  limpar/encher contêiner é pulado.
+- **O mapa-mundo do jogador é o `MapItem.getSingleton()`** (instância de `Base.Map`), cujos símbolos
+  vão para `map_symbols.bin` no save (`MapItem.SaveWorldMap`, bytecode). A UI do mapa-mundo só existe
+  depois de `ISWorldMap.ShowWorldMap` (`ISWorldMap.lua:1499-1508`), então não há `mapAPI` dele antes
+  de o jogador abrir o mapa.
+- **`Stash.load(tabela)`** lê `type`, `item`, `buildingX/Y`, `spawnTable`, `customName` (passado por
+  `Translator.getText`), `zombies`, `barricades`, `spawnOnlyOnZed`, `daysToSpawn` (`"min-max"` ou
+  `"min"`), `traps` e `containers` (bytecode).
+
 **Para mod:** o dado é Lua global, então um mod **talvez** registre stash própria somando um
 `newStash` num arquivo seu — nenhum mod de `STEAM/` faz isso, e não foi testado (ver "Pontos a
 confirmar"). O motor em si não é chamável de forma útil do Lua. Um mod que queira o mesmo efeito com
@@ -936,6 +1008,11 @@ outros gatilhos reimplementa com as peças desta página.
 
 ## Pontos a confirmar
 
+- `[2026-11-01]` **Marca de mapa a partir de mod, só in-game:** (1) se símbolo posto pela
+  `getSymbolsAPIv2()` com o item aberto persiste no item depois de salvar/recarregar, e em MP chega ao
+  servidor; (2) se `setMapID` feito no servidor chega ao cliente; (3) se `Stash.new(nome)` é chamável do
+  Lua; (4) se um `newStash` de mod entra em `allStashes` (ordem entre o Lua do mod e `StashSystem.init`);
+  (5) se `setAllExplored(true)` deixa vazios os contêineres comuns do prédio da stash.
 - **Se o item largado por `AddWorldInventoryItem` do lado servidor chega ao cliente na hora, sem
   restart.** O mecanismo está resolvido no bytecode (2026-09-14, "Os dois booleanos", na rota manual
   acima). Observado em servidor dedicado em 2026-09-14: `Base.Money` largado às 12:57

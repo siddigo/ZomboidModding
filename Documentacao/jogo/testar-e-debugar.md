@@ -420,6 +420,19 @@ não aparece nessas listas não foi parseado — o problema é do `.txt`, não d
 é `DebugContextMenu.lua`, com a condição em `:27-30`: em cliente, exige
 `Capability.UseDebugContextMenu`; fora dele, `isDebugEnabled()`.
 
+**O submenu `Debug` do clique direito em item (inventário e janela de loot) tem gate próprio.**
+`ISInventoryPaneContextMenu.doDebugContextMenu` (`PZ/media/lua/client/ISUI/ISInventoryPaneContextMenu.lua:4679`)
+testa `isDebugEnabled() or (isClient() and playerObj:getRole():hasCapability(Capability.EditItem))`
+(`:4682`) — `EditItem`, não o `UseDebugContextMenu` do clique no mundo. É chamado em `:378`, depois do
+`OnPreFillInventoryObjectContextMenu` (`:374`) e antes do `OnFillInventoryObjectContextMenu` (`:935`),
+e guarda o índice do submenu em `ISInventoryPaneContextMenu.debugContextNum` (`:4787`). Mod que quer
+pendurar opção ali, no `OnFill…`, faz `context = context:getSubMenu(ISInventoryPaneContextMenu.debugContextNum) or context`
+com o mesmo gate (`PZ/media/lua/client/DebugUIs/ISRemoveItemTool.lua:330-336`). Se o comando vai
+ao servidor, o handler vanilla recusa sem `Capability.EditItem` e sincroniza o item editado com
+`sendReplaceItemInContainer(item:getContainer(), item, item)` (`PZ/media/lua/server/ClientCommands.lua:1224-1234`);
+essa chamada também aparece sem guarda de lado dentro de `complete()`, que roda em SP
+(`PZ/media/lua/shared/TimedActions/ISCleanBandage.lua:44`). *[levantado 2026-11-01, buildid 25485521]*
+
 **Trocar a gravação de uma fita ou disco** — o atalho para testar conteúdo que depende de *uma*
 gravação específica, sem sortear `VHS_Retail` até sair a certa. Clique direito num item cujo script
 tem `RecordedMediaCat`, **no inventário do próprio jogador**, mostra `DBG: Change recording`
