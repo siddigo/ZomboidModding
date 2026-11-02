@@ -10,6 +10,16 @@ Você é um Arquiteto/Planejador de mods para Project Zomboid. Sua função NÃO
 
 **Nunca escreva em `ProjectZomboid/` nem em `steamapps/`** — leitura apenas, em qualquer circunstância.
 
+## Onde rodar
+
+**Na sessão principal, em Opus, nunca como subagente.** Subagente não dispara subagente: rodando
+dentro de um Agent, o `pz-explorer` fica fora de alcance e todo o grep cai no modelo caro, e cada
+agente ainda paga do zero a leitura de memory, doc e código que a sessão já tinha.
+
+Pedido com **vários conjuntos** roda **em sequência, nesta mesma sessão**, um conjunto por vez: o que
+já foi lido serve ao seguinte, e o conjunto N ancora no que o N-1 decidiu (nome de função, API
+compartilhada) em vez de reconciliar depois. Não reabra arquivo que já está no contexto.
+
 ## Objetivo principal
 
 Produzir specs que minimizem consumo de tokens e eliminem exploração desnecessária do código durante a implementação.
@@ -57,7 +67,9 @@ contexto. Corte antes de gravar.
 2. **Nada de contexto implícito.** Tudo que for necessário para implementação deve estar explicitamente descrito na spec — caminhos **absolutos** (os mods vivem em `~\Zomboid\Workshop\<Mod>`, fora deste repositório), nomes completos de item/recipe/módulo, campos de script, eventos Lua, e onde está a sintaxe canônica (`caminho:linha` já conferido). Explícitos são os fatos e as decisões; o código que os aplica é trabalho do executor (ver seção acima).
 3. **Toda exploração é feita AGORA, nesta etapa.** Antes de escrever qualquer spec:
    - **Consulte o memory PRIMEIRO.** O índice `.claude/memory/MEMORY.md` já vem carregado no contexto da sessão; abra os arquivos de memory relevantes ao mod/assunto (seguindo os ponteiros do índice) ANTES de grepar. Trate os fatos ali como ponto de partida confiável — eles frequentemente já resolvem localização de arquivos, campo correto de um `.txt`, decisões passadas e armadilhas conhecidas. Só confirme no código quando a memory citar arquivo/campo/ID que precise de verificação (a memory reflete o que era verdade quando foi escrita, e pode ser de outro build do jogo).
-   - **Delegue a exploração ampla ao subagente `pz-explorer` (Haiku).** Para o que a memory não cobriu — localizar os `.lua`/`.txt` envolvidos, achar o exemplo canônico de um tipo de item/receita/entity, mapear onde um evento é registrado, varrer usos de uma tag ou sprite — dispare o agente `pz-explorer` em vez de grepar você mesmo. Ele devolve `caminho:linha` + resumo e mantém o grep pesado fora do modelo caro desta skill. Reserve `Read` inline apenas para os trechos específicos que VOCÊ precisa ver para decidir design.
+   - **Delegue a exploração ampla ao subagente `pz-explorer` (Haiku).** Para o que a memory não cobriu — localizar os `.lua`/`.txt` envolvidos, achar o exemplo canônico de um tipo de item/receita/entity, mapear onde um evento é registrado, varrer usos de uma tag ou sprite, listar entradas de uma tabela grande do jogo (`Distributions.lua`, por exemplo) — dispare o agente `pz-explorer` em vez de grepar você mesmo. Várias perguntas independentes vão num disparo só, ou em disparos paralelos. Ele devolve `caminho:linha` + resumo e mantém o grep pesado fora do modelo caro desta skill. **Sinal de alerta: a terceira chamada seguida de `grep`/`sed`/`cat` sua no `media/` é o trabalho que devia ter ido para ele.**
+   - **Leitura inline é cirúrgica.** `Read` com `offset`/`limit` no trecho que você precisa ver para decidir design — a seção da página de `Documentacao/` (ache a linha pelo índice ou por um `Grep`), as linhas que o `pz-explorer` apontou. Nada de `cat` de arquivo inteiro nem de despejar uma pasta de specs anterior para "ter contexto": leia o `SPEC-00-escopo.md` dela e só a spec que o conjunto atual toca.
+   - **Levantamento que exige escrever e rodar script** (parsear binário do mapa, gerar tabela de dados, coletar centenas de entradas) **não é exploração, é implementação**: vira spec própria, com fonte, formato de saída e destino decididos, para o executor rodar. Se uma decisão de design depende do resultado, tire uma amostra mínima que baste para decidir — não a coleta completa.
    - **`media/` do jogo é a fonte da verdade de sintaxe.** Antes de especificar qualquer campo de `.txt` ou chamada de API, confirme contra o arquivo equivalente do jogo. O parser da IndieStone é rígido e falha em silêncio ou derruba o carregamento do mod — a spec aponta o **bloco canônico real** (`caminho:linha` conferido), não uma sintaxe plausível.
    - **API Java exposta ao Lua**: sem acesso à assinatura; ancore na chamada real encontrada em `media/lua` e cite `caminho:linha` na spec.
    - Se precisar saber o que o jogo fez em runtime, leia `~\Zomboid\console.txt` (e `Logs/`) agora, em vez de mandar o executor descobrir depois.
@@ -208,7 +220,7 @@ Se faltar informação, PARE e reporte: "BLOQUEIO: informação ausente na spec"
 ## Processo ao executar esta skill
 
 1. Entenda o pedido do usuário. Se for vago, pergunte o suficiente para escopar (qual mod, qual comportamento in-game, build alvo) antes de explorar.
-2. **Consulte o memory primeiro** (`MEMORY.md` + arquivos relevantes) — é a fonte mais barata e já resolve boa parte do contexto. Só então explore o que a memory NÃO cobre: **delegue a busca ampla ao subagente `pz-explorer` (Haiku)** e use `Read` inline apenas para os trechos que você precisa ver para decidir. O objetivo é ter todos os fatos concretos necessários agora — nada de "verificar depois" — sem queimar o modelo caro desta skill em grep mecânico.
+2. Explore conforme a regra 3: memory primeiro, busca ampla no `pz-explorer`, `Read` cirúrgico para decidir. O objetivo é ter todos os fatos concretos agora — nada de "verificar depois" — sem queimar o modelo caro desta skill em grep mecânico.
 3. Determine o mod e o nome curto do conjunto; crie `Projetos/<NomeDoMod>/NN-nome-curto-do-conjunto/`.
 4. Divida o trabalho em specs pequenas e independentes sempre que possível; quando houver dependência sequencial (script → receita → tradução, por exemplo), declare isso explicitamente no Objetivo de cada uma ("depende de SPEC-01").
 5. Escreva cada spec individual no formato definido, salvando em `Projetos/<NomeDoMod>/NN-nome-curto-do-conjunto/SPEC-XX-nome-curto.md`. Antes de gravar, confira contra "Spec é decisão, não implementação": nenhum corpo de função, nenhum código colado, e ~100 linhas no máximo.

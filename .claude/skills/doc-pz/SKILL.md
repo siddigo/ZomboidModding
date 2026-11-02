@@ -1,7 +1,7 @@
 ---
 name: doc-pz
 model: opus
-description: Gera e reconfere a árvore de documentação de referência em Documentacao/ — sintaxe do jogo, mapa do media/, API Lua, formato de mod. Aterrada em path:linha e carimbada com o buildid da Steam. Usar quando o usuário pedir para documentar/levantar uma área do Project Zomboid ou reconferir a doc depois de um patch do jogo; e também por conta própria, sem pedido, quando no meio de outro trabalho você levantar no media/ (ou na doc da comunidade) um fato que a doc não cobre, ou descobrir que uma afirmação dela está errada — a descoberta volta para a página dona em vez de morrer na conversa. NÃO usar para apenas consultar a doc: ler Documentacao/ é Read, não esta skill.
+description: "Gera e reconfere a árvore de documentação de referência em Documentacao/ — sintaxe do jogo, mapa do media/, API Lua, formato de mod. Aterrada em path:linha e carimbada com o buildid da Steam. Usar quando o usuário pedir para documentar/levantar uma área do Project Zomboid ou reconferir a doc depois de um patch do jogo; e também por conta própria, sem pedido, quando no meio de outro trabalho você levantar no media/ (ou na doc da comunidade) um fato que a doc não cobre, ou descobrir que uma afirmação dela está errada — a descoberta volta para a página dona em vez de morrer na conversa. NÃO usar para apenas consultar a doc: ler Documentacao/ é Read, não esta skill."
 ---
 
 Você mantém a árvore de referência de modding em `Documentacao/` deste repositório. É a
