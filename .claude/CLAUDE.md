@@ -40,23 +40,8 @@ partir da pasta do jogo cai lá sem erro e devolve quase nada. **Sempre absoluto
 
 ### Formato de um mod (B42)
 
-```
-<PastaDoUpload>/
-  workshop.txt          # metadados do upload (id numerico, title, description, tags, visibility)
-  preview.png           # thumbnail da Workshop
-  Contents/
-    mods/
-      <NomeDoMod>/      # nome do mod para o jogo; NAO precisa ser igual a pasta do upload
-        42/             # pasta por versao do jogo — `42` ou `42.0`, conforme o mod
-          mod.info      # id, name, description, poster, author, modversion, versionMin[, versionMax, require]
-          poster.png
-          media/{lua,scripts,...}
-        common/
-          media/{textures,models_X,scripts,...}
-```
-
-A pasta de versão carrega o específico do build (`mod.info`, `poster.png`, `media/lua`,
-`media/scripts`); `common/` carrega o que não muda (texturas, `models_X`, tiles). Dois formatos
+Layout canônico (upload → `Contents/mods/<NomeDoMod>/` → `42/` + `common/`) em
+`Documentacao/jogo/carregamento-de-mods.md`. Dois formatos
 antigos ainda aparecem — pré-B42 sem pasta de versão, e fase inicial com só `mod.info` + `media/` na
 raiz — então **olhe o layout do mod antes de mexer, não presuma.** Pasta em `Contents/mods/` com nome
 de outro mod costuma ser resquício de template.
@@ -73,9 +58,6 @@ e opcionais `mods/`, `oficial/`). Skills e agentes se descrevem sozinhos na list
 
 - **`iniciar-mod`**: quem sabe o formato é `.claude/skills/iniciar-mod/novo-mod.ps1`. **Mudança de
   formato de mod vai no `.ps1`, não no prompt.**
-- **`criar-conteudo`**: conteúdo de PZ é uma pilha de camadas (`.txt`, arte, presença no mundo,
-  tradução, uso). Escrever só a camada 1 carrega limpo e nada aparece. Suas `references/` só carregam
-  o delta lado-mod e apontam para `Documentacao/jogo/`.
 - **`pz-explorer`** (Haiku): localiza no `media/` e devolve `caminho:linha`. **Subagente não dispara
   subagente** — só a sessão principal alcança o `pz-explorer`.
 - **`Projetos/<NomeDoMod>/NN-nome-curto/`**: um conjunto por pedido, com `SPEC-00-escopo.md` +
