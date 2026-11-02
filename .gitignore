@@ -1,5 +1,5 @@
 # Por usuario: o que voce gera usando o workspace fica fora do repositorio publico.
-.claude/settings.local.json
+.claude/settings.local.json*
 .claude/memory/
 CLAUDE.local.md
 /CLAUDE.md
