@@ -339,6 +339,31 @@ jogador**, não de zumbi. Mod que precisa reagir à vida de estrutura faz varred
 mas nenhuma outra classe do `.jar` contém a string: **são declarados e nunca disparados**. Registrar
 neles não dá erro e não roda nada.
 
+### `OnZombieDead` não diz quem matou — `getAttackedBy` diz `[levantado 2026-11-02, javap no .jar, buildid 25485521]`
+
+O callback recebe **um** argumento, o zumbi: o `triggerEvent("OnZombieDead", zumbi)` fica em
+`zombie.characters.IsoZombie.onKilled(IsoGameCharacter, HandWeapon, boolean)`, e também em
+`IsoGameCharacter.FireCheck` e `ReduceHealthWhenBurning` (morte por fogo). O matador sai do próprio
+zumbi:
+
+- `IsoGameCharacter.Kill(killer, weapon, boolean, CharacterDiedListener)` chama
+  `setAttackedBy(killer)` **antes** de `onKilled`, então dentro do callback `zombie:getAttackedBy()`
+  devolve quem matou. `ReduceHealthWhenBurning` e `onHitByVehicle` também chamam `setAttackedBy`.
+  Pode não ser jogador: filtre com `instanceof(killer, "IsoPlayer")` (o idioma de `instanceof` está
+  em `PZ/media/lua/shared/Items/OnBreak.lua:62`).
+- Na morte por golpe, `IsoGameCharacter.hitConsequences` faz `setZombieKills(getZombieKills() + 1)`
+  no atacante **antes** de `Kill`: no callback, `killer:getZombieKills()` já conta esta morte.
+- `hitConsequences` só chama `Kill` com `GameClient.client` falso — singleplayer ou servidor (no
+  servidor, depois de `die()`). Handler que precisa do matador vai em `server/`, que também carrega
+  em SP.
+
+Nada disso aparece em `media/lua`: zero `getAttackedBy`, e os três registradores de `OnZombieDead`
+são do tutorial (`PZ/media/lua/client/Tutorial/Steps.lua:840`, `:1141`, `:1706`), que nem leem o
+argumento. Por isso mod publicado atribui a morte do jeito longo — guarda `tostring(target)` em
+`OnWeaponHitCharacter` e compara no `OnZombieDead`
+(`STEAM/3403870858/mods/Lifestyle/common/media/lua/client/ISAmbt/LSElDorado.lua:260`) — o que
+`getAttackedBy` dispensa.
+
 ## Os 19 eventos que a lista dos 182 não enxerga
 
 A lista acima foi montada varrendo `Events.<nome>`, e por construção ela só vê evento que **alguém

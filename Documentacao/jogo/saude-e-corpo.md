@@ -249,6 +249,15 @@ quatro floats por moodle, lidos por `Moodle` com `getLowestThreshold`/`getModera
 **sono** ("Drowsy"…"Ridiculously Tired", `PZ/media/lua/shared/Translate/EN/Moodles.json:22-25`), e o
 cansaço **físico** é o moodle `Endurance` ("Out of Breath"…"Exhausted", `:2-5`).
 
+`[levantado 2026-11-02, javap, buildid 25485521]` **Infelicidade e tédio vão de 0 a 100, não de 0 a
+1.** `CharacterStat` registra `"Unhappiness"` e `"Boredom"` com `(0, 100, 0)`, enquanto `"Stress"`, `"Thirst"` e
+`"Sickness"` usam `(0, 1, 0)` — o mesmo `add` de 0,5 é meio estresse e um respiro de infelicidade.
+Limiares em `MoodleStat`: **`UNHAPPY` 20 / 45 / 60 / 80**, **`BORED` 25 / 50 / 75 / 90**. Escrita do
+lado Lua: `getStats():remove(CharacterStat.UNHAPPINESS, …)`
+(`PZ/media/lua/server/Farming/SFarmingSystem.lua:339-340`), `:add(…)`
+(`PZ/media/lua/shared/RadioCom/ISRadioInteractions.lua:36`), `:get`/`:set`
+(`PZ/media/lua/shared/TimedActions/ISReadABook.lua:73-74`).
+
 Além de ler, dá para **chamar atenção** para um ícone já existente:
 
 ```lua
